@@ -9,7 +9,7 @@ to go into each file individually
 
 """
 
-from .digitalmultimeters import *
+from .multimeters import *
 from .lockins import *
 from .redpitaya import *
 from .switchbox import *
