@@ -5,7 +5,7 @@ __all__ = ['SwitchBox']
 
 class SwitchBox:
     def __init__(self):
-        self.start_byte = '01'
+        self.start_byte = 'FE'
         self.clear_byte = '10'
         self.refresh_byte = '12'
         self.blank_byte = '00'
@@ -44,3 +44,5 @@ class SwitchBox:
     def clear(self):
         self.sb.write(bytes.fromhex(self.start_byte + self.clear_byte + self.blank_byte + self.stop_byte))
         self.refresh()
+#
+# class ResistanceBox()

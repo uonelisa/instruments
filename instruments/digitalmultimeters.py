@@ -1,7 +1,7 @@
 import visa
 import numpy as np
 
-__all__ = ['K2401', 'K2000', 'PulseGenerator']
+__all__ = ['K2401', 'K2000', 'K2461']
 
 
 class K2401:
@@ -83,7 +83,8 @@ class K2000:
     def __init__(self):
         self.buffer_length = 500
 
-    def connect(self, port, range):
+    # connect to a k2000 set up using an rs232 at 19.2k baud rate with given port. The range is the measurement range (0 is auto)
+    def connect(self, port):
         rm = visa.ResourceManager('@ni')
         self.k2000 = rm.open_resource(f'COM{port}', baud_rate=19200)
         self.k2000.close()
@@ -97,19 +98,13 @@ class K2000:
         self.k2000.write('*cls')
 
         print(self.k2000.query('*IDN?'))
-        # self.k2000.write('*rst')  # reset
-        # k2000.write('disp:enab off')
-         # clear system
+
+
+    def measure_n(self, num, volt_range, nplc):
         self.k2000.write('sens:func "volt"')  # measure volts
-        self.k2000.write(
-            'sens:volt:nplc 2')  # level of averaging min, 0.01 -> 10 ish Power line cycle: 50hz 2-> 25hz measurement
-        self.k2000.write(f'sens:volt:rang {range}')# auto-raging
-
-
-    def close(self):
-        self.k2000.close()
-
-    def measure(self, num):
+        self.k2000.write(f'sens:volt:nplc {nplc}')  # level of averaging min, 0.01 -> 10 ish Power line cycle:
+                                                    # 50hz 2-> 25hz measurement
+        self.k2000.write(f'sens:volt:rang {volt_range}')# auto-ranging
         self.k2000.write(f'trig:count {num}')  # number of points to measure
         self.k2000.write('trac:clear')  # clear buffer
         self.k2000.write(f'trac:poin {num}')  # size of buffer
@@ -117,11 +112,17 @@ class K2000:
         self.k2000.write('trac:feed:cont next')  # doesn't overwrite previous data until full
         # self.k2000.write('init')
 
+    def measure_one(self, volt_range, nplc):
+        self.k2000.write('sens:func "volt"')  # measure volts
+        self.k2000.write(f'sens:volt:nplc {nplc}')  # level of averaging min, 0.01 -> 10 ish Power line cycle:
+        # 50hz 2-> 25hz measurement
+        self.k2000.write(f'sens:volt:rang {volt_range}')  # auto-ranging
+
     def trigger(self):
         self.k2000.write('init')
         self.k2000.write('*wai')
 
-    def read(self):
+    def read_buffer(self):
         # self.k2000.write('form:data ASCII')  #  read doesn't work without this line ?
         data = self.k2000.query_ascii_values('trac:data?')
 
@@ -129,66 +130,115 @@ class K2000:
 
         return data
 
+    def read_one(self):
+        data = np.array([self.k2000.query_ascii_values('sens:data?')])
+        return data[0][0]
 
-class PulseGenerator:
+    def close(self):
+        self.k2000.close()
 
+
+class K2461:
+
+    # connects to the k2461.
     def connect(self):
         rm = visa.ResourceManager('@ni')
-        # self.k2400 = serial.Serial("COM%d" % port, 38400, 8, timeout=1)
-        self.k2400 = rm.open_resource('USB0::0x05E6::0x2461::04121022::INSTR')
-        self.k2400.timeout = 12000
-        print(self.k2400.query('*IDN?'))
-        # self.k2400.write(':SYST:BEEP:STAT OFF')
-        self.k2400.write(':*RST')
-        self.k2400.write('sour:func curr')
-        self.k2400.write('sens:func "volt"')
-        self.k2400.write('sens:volt:rang:auto on')
-        self.k2400.write(f'trac:make "defBuffer1", {10000}')
 
-    def pulse(self, current, width, delay):
+        self.k2461 = rm.open_resource('USB0::0x05E6::0x2461::04121022::INSTR')
+        self.k2461.timeout = 12000
+        print(self.k2461.query('*IDN?'))
+        # self.k2400.write(':SYST:BEEP:STAT OFF')
+        self.k2461.write(':*RST')
+        self.k2461.write('sour:func curr')
+        self.k2461.write('sens:func "volt"')
+        self.k2461.write('sens:volt:rang:auto on')
+        self.k2461.write(f'trac:make "defBuffer1", {10000}')
+
+    # sends a pulse with given current and time length
+    def pulse(self, current, width):
         # self.k2400.write('sour:func "curr"')
         # self.k2400.write('sens:func "volt"')
         # self.k2400.write('sens:volt:rang:auto on')
         # self.k2400.write('sour:curr:vlim ')
-        self.k2400.write('sens:volt:rsen off')
-        self.k2400.write(':FORM:ASC:PREC 16')
+        self.k2461.write('sens:volt:rsen off')
+        self.k2461.write(':FORM:ASC:PREC 16')
         # self.k2400.write(f'sour:puls:tr:curr 0, {current}, {width}, 1, off, "defbuffer1", {delay}, 0, 5, 5')
-        self.k2400.write(
+        self.k2461.write(
             f'SOUR:PULS:SWE:CURR:LIN 0, 0, {current}, 2, {width}, off, "defbuffer1", 0, 0, 1, 30, 30, off, off')
-        self.k2400.write('INIT')  # self.k2400.write(f':READ?')
-        self.k2400.write('*WAI')
+        self.k2461.write('INIT')  # self.k2400.write(f':READ?')
+        self.k2461.write('*WAI')
 
-    def measure(self, current, num):
+    # sets up a measurement of "num" points with applied probe current of "current" Amps
+    def measure_n(self, current, num):
         # self.k2400.write('sour:func curr')
-        self.k2400.write('sour:curr:rang 200e-6')
-        self.k2400.write(f'sour:curr {current}')
+        self.k2461.write('sour:curr:rang 200e-6')
+        self.k2461.write(f'sour:curr {current}')
 
         # self.k2400.write('sour:curr:vlim 1')
-        self.k2400.write('sens:volt:rsen on')
-        self.k2400.write(f'sens:volt:nplc 2')
-        self.k2400.write('sens:volt:rang:auto on')
+        self.k2461.write('sens:volt:rsen on')
+        self.k2461.write(f'sens:volt:nplc 2')
+        self.k2461.write('sens:volt:rang:auto on')
 
-        self.k2400.write(f'trig:load "SimpleLoop", {num}, 0, "defBuffer1"')
-        self.k2400.write('outp on')
+        self.k2461.write(f'trig:load "SimpleLoop", {num}, 0, "defBuffer1"')
+        self.k2461.write('outp on')
 
+    # For use when reading one value from the source meter in 4 wire mode.
+    # Applies current and measures voltage drop across device (Rxx)
+    def enable_4_wire_probe(self, current, nplc):
+        self.k2461.write('sour:func curr')
+        self.k2461.write(f'sour:curr {current}')
+        self.k2461.write('sour:curr:vlim 2')
+        self.k2461.write('sens:func "volt"')
+        self.k2461.write('sens:volt:rang:auto on')
+        self.k2461.write('sens:volt:rsen on')
+        self.k2461.write(f'sens:volt:nplc {nplc}')
+        self.k2461.write('outp on')
+
+    # For use when reading one value from Source meter at a time in 2 wire mode.
+    # Applies current and measures voltage required to apply that current
+    # nplc: 0.02, 0.2, 1, 10, 100, 200. 0.2 is "fast".
+    def enable_2_wire_probe(self, current, nplc):
+        self.k2461.write('sour:func curr')
+        self.k2461.write(f'sour:curr {current}')
+        self.k2461.write('sour:curr:vlim 2')
+        self.k2461.write('sens:func "volt"')
+        self.k2461.write('sens:volt:rang:auto on')
+        self.k2461.write('sens:volt:rsen off')
+        self.k2461.write(f'sens:volt:nplc {nplc}')
+        self.k2461.write('outp on')
+
+
+    def disable_probe_current(self):
+        self.k2461.write('outp off')
+
+    # initiates the measurement set up using measure
     def trigger(self):
-        self.k2400.write('init')
-        self.k2400.write('*wai')
+        self.k2461.write('init')
+        self.k2461.write('*wai')
 
-    def read(self, num):
-        self.k2400.write('outp off')
+    # reads num data points from the buffer
+    def read_buffer(self, num):
+        self.k2461.write('outp off')
         # print(self.k2400.query('trac:act? "defBuffer1"'))
         try:
-            data = np.array(self.k2400.query_ascii_values(f'trac:data? 1, {num}, "defBuffer1", read, rel'))
+            data = np.array(self.k2461.query_ascii_values(f'trac:data? 1, {num}, "defBuffer1", read, rel'))
             t = data[1::2]
             d = data[0::2]
             return t, d
         except:
-            print('could not read data from k2400')
+            print('could not read data from K2461')
             return np.array([]), np.array([])
 
+    def read_one(self):
+        data = np.array([self.k2461.query_ascii_values(':READ? "defbuffer1", sour, read')])
+        print(data)
+        cur = data[0][0]
+        vol = data[0][1]
+        return cur, vol
+
+    # closes conections and allows for a new process to connect
     def close(self):
-        self.k2400.write('*RST')
-        self.k2400.write('*SRE 0')
-        self.k2400.write('outp off')
-        self.k2400.close()
+        self.k2461.write('*RST')
+        self.k2461.write('*SRE 0')
+        self.k2461.write('outp off')
+        self.k2461.close()

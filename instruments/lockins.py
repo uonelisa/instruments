@@ -99,7 +99,6 @@ class SR830:
         except ValueError:
             print('Not valid sample rate')
 
-
     #  This is more complicated because it does not have an internal clock or way to set the measurement number.
     def measure(self):
         self.lockin.write('SEND 0')  # one shot mode: does not overwrite end of buffer
