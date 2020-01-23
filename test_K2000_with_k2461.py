@@ -1,7 +1,7 @@
 import time
 import matplotlib.pyplot as plt
 import instruments
-
+# This scripts measures the 4 wire resistance using the k2461 as a source meter.
 
 pg = instruments.K2461()
 dmm = instruments.K2000()

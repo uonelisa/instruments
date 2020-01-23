@@ -13,3 +13,4 @@ from .digitalmultimeters import *
 from .lockins import *
 from .redpitaya import *
 from .switchbox import *
+from .sourcemeters import *
