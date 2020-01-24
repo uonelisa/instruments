@@ -18,9 +18,7 @@ class K2401:
         self.k2401.write('*rst')
         self.k2401.write('*cls')
 
-
     def pulse(self, current):
-
         self.k2401.write('*rst')
         self.k2401.write('trac:cle')
         self.k2401.write('*cls')
@@ -35,7 +33,7 @@ class K2401:
         self.k2401.write('trig:del 0')
         self.k2401.write('sour:del 0')
         self.k2401.write('sour:cle:auto on')
-        self.k2401.write('INIT')        # self.k2400.write(f':READ?')
+        self.k2401.write('INIT')  # self.k2400.write(f':READ?')
         self.k2401.write('*WAI')
 
     def measure(self, current, num):
@@ -110,14 +108,14 @@ class K2461:
         self.k2461.write('*WAI')
 
     # sets up a measurement of "num" points with applied probe current of "current" Amps
-    def measure_n(self, current, num):
+    def measure_n(self, current, num, nplc):
         # self.k2400.write('sour:func curr')
         self.k2461.write('sour:curr:rang 200e-6')
         self.k2461.write(f'sour:curr {current}')
 
         # self.k2400.write('sour:curr:vlim 1')
         self.k2461.write('sens:volt:rsen on')
-        self.k2461.write(f'sens:volt:nplc 2')
+        self.k2461.write(f'sens:volt:nplc {nplc}')
         self.k2461.write('sens:volt:rang:auto on')
 
         self.k2461.write(f'trig:load "SimpleLoop", {num}, 0, "defBuffer1"')
@@ -147,7 +145,6 @@ class K2461:
         self.k2461.write('sens:volt:rsen off')
         self.k2461.write(f'sens:volt:nplc {nplc}')
         self.k2461.write('outp on')
-
 
     def disable_probe_current(self):
         self.k2461.write('outp off')
