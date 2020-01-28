@@ -11,7 +11,7 @@ import matplotlib.pyplot as plt
 
 switchbox = instruments.SwitchBox()
 pulsegenerator = instruments.K2461()
-kiethley = instruments.K2000()
+keithley = instruments.K2000()
 
 pulse1_assignments = {"I+": "B", "I-": "F"}
 pulse2_assignments = {"I+": "D", "I-": "H"}
@@ -25,41 +25,41 @@ measure_delay = measure_number * 0.18
 start_time = time.time()
 switchbox.connect(5)
 pulsegenerator.connect()
-kiethley.connect(3)
+keithley.connect(3)
 
 # pulse in one direction
 switchbox.switch(pulse1_assignments)
 plt.pause(200e-3)
 pulse1_time = time.time()
-pulsegenerator.pulse(pulse_current, pulse_width)
+pulsegenerator.pulse_current(pulse_current, pulse_width)
 print('Pulse current: ', pulse_current)
 plt.pause(200e-3)
 switchbox.switch(measure_assignments)
 pulsegenerator.measure_n(measure_current, measure_number, 2)
-kiethley.measure_n(measure_number, 0, 2)
+keithley.measure_n(measure_number, 0, 2)
 plt.pause(200e-3)
-kiethley.trigger()
+keithley.trigger()
 pulsegenerator.trigger()
 plt.pause(measure_delay)
 pos_time, pos_rxx = pulsegenerator.read_buffer(measure_number)
-pos_rxy = kiethley.read_buffer()
+pos_rxy = keithley.read_buffer()
 
 # pulse in other direction
 switchbox.switch(pulse2_assignments)
 plt.pause(200e-3)
 pulse2_time = time.time()
-pulsegenerator.pulse(pulse_current, pulse_width)
+pulsegenerator.pulse_current(pulse_current, pulse_width)
 plt.pause(200e-3)
 print('Pulse current: ', pulse_current)
 switchbox.switch(measure_assignments)
 pulsegenerator.measure_n(measure_current, measure_number, 2)
-kiethley.measure_n(measure_number, 0, 2)
+keithley.measure_n(measure_number, 0, 2)
 plt.pause(200e-3)
-kiethley.trigger()
+keithley.trigger()
 pulsegenerator.trigger()
 plt.pause(measure_delay)
 neg_time, neg_rxx = pulsegenerator.read_buffer(measure_number)
-neg_rxy = kiethley.read_buffer()
+neg_rxy = keithley.read_buffer()
 neg_time = neg_time
 
 plt.figure()

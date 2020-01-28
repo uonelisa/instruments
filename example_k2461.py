@@ -7,7 +7,7 @@ import instruments
 pg = instruments.K2461()
 pg.connect()
 
-pg.pulse(1e-3, 1e-3)
+pg.pulse_current(1e-3, 1e-3)
 time.sleep(5)
 
 pg.measure_n(100e-6, 50, 2)

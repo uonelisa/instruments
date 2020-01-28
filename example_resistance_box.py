@@ -44,7 +44,7 @@ time.sleep(2)
 c, v = pg.read_one()
 resistance_measured["D"] = int((v / c) / 2)
 resistance_measured["H"] = int((v / c) / 2)
-print(resistance_measured["D"])
+print(resistance_measured)
 max_res = int(max(resistance_measured.values()) + 50)
 
 for pin, res in resistance_measured.items():
