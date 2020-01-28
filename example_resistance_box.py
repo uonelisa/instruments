@@ -23,7 +23,7 @@ balance_box.reset_resistances()
 switch_box.switch(assignments_0)
 time.sleep(2)
 c, v = pg.read_one()
-print(int(v/c))
+print(int(v / c))
 resistance_measured["G"] = int((v / c) / 2)
 resistance_measured["C"] = int((v / c) / 2)
 
@@ -53,3 +53,5 @@ for pin, res in resistance_measured.items():
 balance_box.set_resistances(resistance_assigned)
 
 print(resistance_assigned, resistance_measured)
+
+# TODO: Test the resistance after setting resbox
