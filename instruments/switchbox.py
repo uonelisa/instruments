@@ -51,7 +51,6 @@ class BalanceBox:
 
     # Defines the required dictionaries and default assignments
     def __init__(self):
-
         self.enable_all_byte = "FF"
         # Reverse becuase of enable byte format (in powers of 2) "7:h 6:G 5:F 4:E 3:D 2:C 1:B 0:A"
         # A is channel 1, B is channel 2, C is channel 3 etc.
