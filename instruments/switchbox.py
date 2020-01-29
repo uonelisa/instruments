@@ -4,6 +4,8 @@ __all__ = ['SwitchBox', 'BalanceBox']
 
 
 class SwitchBox:
+
+    # Defines useful hex values for ease of coding and use.
     def __init__(self):
         self.start_byte = 'FE'
         self.clear_byte = '10'
@@ -15,28 +17,21 @@ class SwitchBox:
                                   "V1+": '20', "V1-": '10', "V2+": '08', "V2-": '04', "I+": '02', "I-": '01', "0": '00',
                                   "": '00'}
 
+    # connects to sb on given port with baud rate 57600
     def connect(self, port):
         self.sb = serial.Serial(f'COM{port}', 57600, 8)
         self.sb.close()
         self.sb.open()
         self.reset_all()
 
+    # Switches the box. Assignment should be a dictionary of all desired pin connections. eg: {"V1+": "A", "V1-": "B"}
+    # would connect a to V1+ and B to V1-.
     def switch(self, assignments):
-
-        #     this will be called with a desired arrangement and will call make_command if it seems necessary
         self.reset_all()
-        for x, y in assignments.items():
-            for char in y:
-                self.sb.write(bytes.fromhex(self.start_byte + self.binary_dictionary[char] + self.binary_dictionary[x] +
-                                            self.stop_byte))
-                # print(bytes.fromhex(self.start_byte + self.binary_dictionary[char] + self.binary_dictionary[x] +
-                #                self.stop_byte))
+        for channel, output in assignments.items():
+            self.sb.write(bytes.fromhex(self.start_byte + self.binary_dictionary[output] +
+                                        self.binary_dictionary[channel] + self.stop_byte))
         self.refresh()
-
-    def close(self):
-        self.reset_all()
-        self.refresh()
-        self.sb.close()
 
     def refresh(self):
         # sends command to turn off all channels
@@ -46,38 +41,65 @@ class SwitchBox:
         self.sb.write(bytes.fromhex(self.start_byte + self.clear_byte + self.blank_byte + self.stop_byte))
         self.refresh()
 
+    def close(self):
+        self.reset_all()
+        self.refresh()
+        self.sb.close()
 
-#
+
 class BalanceBox:
 
+    # Defines the required dictionaries and default assignments
     def __init__(self):
-        self.enable = ["1", "1", "1", "1", "1", "1", "1", "1"]
-        # self.zero_res_assignment = {"A": 0, "B": 0, "C": 0, "D": 0, "E": 0, "F": 0, "G": 0, "H": 0}
-        self.binary_dictionary = {"A": '01', "B": '02', "C": '03', "D": '04', "E": '05', "F": '06', "G": '07',
-                                  "H": '08'}
+
+        self.enable_all_byte = "FF"
+        # Reverse becuase of enable byte format (in powers of 2) "7:h 6:G 5:F 4:E 3:D 2:C 1:B 0:A"
+        # A is channel 1, B is channel 2, C is channel 3 etc.
+        self.binary_dictionary = {"A": '08', "B": '07', "C": '06', "D": '05', "E": '04', "F": '03', "G": '02',
+                                  "H": '01'}
+        self.reset_assignments = {"A": 0, "B": 0, "C": 0, "D": 0, "E": 0, "F": 0, "G": 0, "H": 0}
         self.start_byte = 'FE'
-        self.clear_byte = '10'
+        self.clear_byte = '11'
         self.enable_byte = '14'
         self.refresh_byte = '12'
         self.blank_byte = '00'
         self.stop_byte = 'C0'
 
+    # Connects on given COM port
     def connect(self, port):
         self.bb = serial.Serial(f'COM{port}', 57600, 8)
         self.bb.close()
         self.bb.open()
         self.reset_resistances()
 
+    # Set the resistance of channels A-H to an int number between 0 and 255. Assignments such as {"A":25, "B":15}
     def set_resistances(self, assignments):
         self.reset_resistances()
         for channel, resistance in assignments.items():
-            res_hex = hex(resistance)[2:4]
+            res_hex = hex(resistance)[2::].zfill(2)
             chan = self.binary_dictionary[channel[0]]
             self.bb.write(bytes.fromhex(self.start_byte + chan + res_hex + self.stop_byte))
+        self.refresh()
 
+    # opens the connections for all channels
+    def enable_all(self):
+        self.bb.write(bytes.fromhex(self.start_byte + self.enable_byte + self.enable_all_byte + self.stop_byte))
+
+    # Takes string like '10001110' which would enable channels A, E, F, G. use when switching to reduce stray currents.
+    def enable_some(self, pin_string):
+        # Reverses pin byte because of ordering.
+        pin_byte = hex(int(pin_string[::-1], 2))[2:].zfill(2)
+        self.bb.write(bytes.fromhex(self.start_byte + self.enable_byte + pin_byte + self.stop_byte))
+
+    # closes all connections.
+    def disable_all(self):
+        self.bb.write(bytes.fromhex(self.start_byte + self.enable_byte + self.blank_byte + self.stop_byte))
+
+    # Refreshes the shift registers essentially activating the
     def refresh(self):
         self.bb.write(bytes.fromhex(self.start_byte + self.refresh_byte + self.blank_byte + self.stop_byte))
 
+    # sets all resistances to 0
     def reset_resistances(self):
         self.bb.write(bytes.fromhex(self.start_byte + self.clear_byte + self.blank_byte + self.stop_byte))
         self.refresh()

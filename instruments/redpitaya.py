@@ -20,13 +20,14 @@ def alert_sound():
 
 class RedPitaya:
 
-    def connect(self):
+    # Connects to RP using IP address (192.168.0.11)
+    def connect(self, IP):
         self.ssh = paramiko.SSHClient()
         self.ssh.load_system_host_keys()
         self.ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
         # The static IP on the UoN Network is "10.156.65.153". Direct connect is 192.168.0.11.
         try:
-            self.ssh.connect('192.168.0.11', port=22, username='root', password='root')
+            self.ssh.connect(f'{IP}', port=22, username='root', password='root')
         except:
             error_sound()
             mb.showerror('SSH error', 'Could not connect to Red Pitaya')
@@ -42,6 +43,7 @@ class RedPitaya:
         # Open SFTP client to download data from Red Pitaya to computer
         self.sftp = self.ssh.open_sftp()
 
+    # initiates a measurement and then reads the buffer
     def get_data(self, tracelen, numavgs, dec, trig):
 
         datacmd = f'/root/ASOPS/trig_stu.o {tracelen} {numavgs} {dec} {trig}'
@@ -60,6 +62,7 @@ class RedPitaya:
         # print(a.shape)
         return a
 
+    # closes connection
     def close(self):
         # This function is almost useless tbh. The close call has a try and except inside it already so if it isn't
         # open it doesn't show any error anyway. It is easier to type self.rp.close() in the GUI calls though.
