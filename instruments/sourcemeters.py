@@ -37,7 +37,7 @@ class K2401:
         self.k2401.write('*WAI')
 
     # Sets up the parameters to measure data and store it in buffer
-    def measure_n(self, current, num, nplc):
+    def measure_n(self, current, num, nplc=2):
         self.k2401.write('*rst')
         self.k2401.write('*cls')
         self.k2401.write('sour:func curr')
@@ -89,7 +89,7 @@ class K2461:
         self.k2461.write(f'trac:make "defBuffer1", {10000}')
 
     # sets up and sends a single square wave pulse with duration "width" in seconds and amplitude "current" in Amps
-    def pulse_current(self, current, width):
+    def pulse_current(self, current, width=1e-3):
         self.k2461.write('sens:volt:rsen off')  # measure 2 wire
         self.k2461.write(':form:asc:prec 16')  # data precision to 16
         # set up pulse waveform
@@ -99,7 +99,7 @@ class K2461:
         self.k2461.write('*wai')  # queue up following commands instead of activating them instantly
 
     # sets up and sends a single square wave pulse with duration "width" in second and amplitude "voltage" in Volts
-    def pulse_voltage(self, voltage, width):
+    def pulse_voltage(self, voltage, width=1e-3):
         self.k2461.write('sens:volt:rsen off')  # measure 2 wire
         self.k2461.write(':form:asc:prec 16')  # data precision to 16
         # set up pulse waveform
@@ -112,7 +112,7 @@ class K2461:
         self.k2461.write('*wai')  # queue up following commands instead of activating them instantly
 
     # sets up a measurement of "num" points with applied probe current of "current" Amps
-    def measure_n(self, current, num, nplc):
+    def measure_n(self, current, num, nplc=2):
         # self.k2400.write('sour:func curr')
         self.k2461.write('sour:curr:rang 200e-6')
         self.k2461.write(f'sour:curr {current}')
@@ -145,7 +145,7 @@ class K2461:
 
     # For use when reading one value from the source meter in 4 wire mode.
     # Applies current and measures voltage drop across device (Rxx)
-    def enable_4_wire_probe(self, current, nplc):
+    def enable_4_wire_probe(self, current, nplc=2):
         self.k2461.write('sour:func curr')
         self.k2461.write(f'sour:curr {current}')
         self.k2461.write('sour:curr:vlim 2')
@@ -158,7 +158,7 @@ class K2461:
     # For use when reading one value from Source meter at a time in 2 wire mode.
     # Applies current and measures voltage required to apply that current
     # nplc: 0.02, 0.2, 1, 10, 100, 200. 0.2 is "fast".
-    def enable_2_wire_probe(self, current, nplc):
+    def enable_2_wire_probe(self, current, nplc=2):
         self.k2461.write('sour:func curr')
         self.k2461.write(f'sour:curr {current}')
         self.k2461.write('sour:curr:vlim 2')
