@@ -1,10 +1,13 @@
 import numpy as np
 import time
+# import tkinter as tk
+# import tkinter.messagebox as mb
+# from tkinter import filedialog as dialog
 import matplotlib
 import instruments
+
 matplotlib.use('Qt5Agg')
 import matplotlib.pyplot as plt
-
 
 pulse1_assignments = {"I+": "B", "I-": "F"}  # configuration for a pulse from B to F
 pulse2_assignments = {"I+": "D", "I-": "H"}  # configuration for a pulse from D to H
@@ -63,16 +66,15 @@ neg_time, neg_rxx = pulsegenerator.read_buffer(measure_number)
 neg_rxy = keithley.read_buffer()
 neg_time = neg_time
 
-
 # plotting
 plt.figure()
-plt.plot(pos_time + pulse1_time - start_time, pos_rxx/measure_current)
-plt.plot(neg_time + pulse2_time - start_time, neg_rxx/measure_current)
+plt.plot(pos_time + pulse1_time - start_time, pos_rxx / measure_current)
+plt.plot(neg_time + pulse2_time - start_time, neg_rxx / measure_current)
 plt.xlabel('Time (s)')
 plt.ylabel('R_xx (Ohms)')
 plt.figure()
-plt.plot(pos_time + pulse1_time - start_time, pos_rxy/measure_current)
-plt.plot(neg_time + pulse2_time - start_time, neg_rxy/measure_current)
+plt.plot(pos_time + pulse1_time - start_time, pos_rxy / measure_current)
+plt.plot(neg_time + pulse2_time - start_time, neg_rxy / measure_current)
 plt.xlabel('Time (s)')
 plt.ylabel('R_xy (Ohms)')
 plt.show()

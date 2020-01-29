@@ -2,12 +2,9 @@ import numpy as np
 import time
 import instruments
 
-
-# all 4 opposite pairing assignments for 2 wire measurements
 ## This script measures the resistance of each pulsing channel in an 8 arm device. The resulting resistances are left
 # assigned to the bb and therefore can be used for pulsing after or the resulting assignments can be copied from the
 # output into your own script.
-
 
 
 # define all 4 opposite pairing assignments for 2 wire measurements
@@ -32,13 +29,18 @@ pg.connect()
 
 # set k2461 ready for 100uA probe current 2 wire with nplc 2
 pg.enable_2_wire_probe(100e-6, 2)
-
-# set first assignment
 balance_box.reset_resistances()
 switch_box.switch(assignments_0)
-time.sleep(2)  # delay to allow the sb to switch
-c, v = pg.read_one() # read one value
+time.sleep(2)
+c, v = pg.read_one()
 print(int(v / c))
+resistance_measured["G"] = int((v / c) / 2)
+resistance_measured["C"] = int((v / c) / 2)
+
+# set first assignment
+switch_box.switch(assignments_0)
+time.sleep(2)  # delay to allow the sb to switch
+c, v = pg.read_one()  # read one value
 resistance_measured["G"] = int((v / c) / 2)  # store half resistance rounded down in each channel part of the pair
 resistance_measured["C"] = int((v / c) / 2)
 
@@ -59,15 +61,6 @@ time.sleep(2)
 c, v = pg.read_one()
 resistance_measured["D"] = int((v / c) / 2)
 resistance_measured["H"] = int((v / c) / 2)
-
-max_res = int(max(resistance_measured.values()) + 10)
-
-for pin, res in resistance_measured.items():
-    resistance_assigned[pin] = max_res - int(res)
-
-balance_box.set_resistances(resistance_assigned)
-resistance_measured["D"] = int((v / c) / 2)
-resistance_measured["H"] = int((v / c) / 2)
 print(resistance_measured)
 max_res = int(max(resistance_measured.values()) + 50)
 
@@ -77,5 +70,3 @@ for pin, res in resistance_measured.items():
 balance_box.set_resistances(resistance_assigned)
 
 print(resistance_assigned, resistance_measured)
-
-# TODO: Test the resistance after setting resbox
