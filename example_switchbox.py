@@ -14,7 +14,7 @@ pulse2_assignments = {"I+": "D", "I-": "H"}
 measure_assignments = {"V1+": "C", "V1-": "G", "V2+": "B", "V2-": "D", "I+": "A", "I-": "E"}
 
 
-switchbox.connect(5)
+switchbox.connect(4)
 
 
 # switch between example configs every second. Listen for clicking.
@@ -25,3 +25,5 @@ time.sleep(1)
 switchbox.switch(pulse2_assignments)
 time.sleep(1)
 switchbox.switch(pulse2_assignments)
+time.sleep(1)
+switchbox.reset_all()

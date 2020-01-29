@@ -17,50 +17,50 @@ measure_delay = measure_number * 0.18  # Not strictly necessary.
 
 switchbox = instruments.SwitchBox()  # make a sb object
 pulsegenerator = instruments.K2461()  # make a k2461 object
-kiethley = instruments.K2000()  # make a k2000 object
+keithley = instruments.K2000()  # make a k2000 object
 start_time = time.time()  # use this for the graphing only
 
 # actually connect to the instruments
 switchbox.connect(5)
 pulsegenerator.connect()
-kiethley.connect(3, 0)
+keithley.connect(3)
 
 # pulse in one direction
 switchbox.switch(pulse1_assignments)
-plt.pause(100e-3)  # pauses to allow changes to apply before telling them to do something else.
+plt.pause(200e-3)  # pauses to allow changes to apply before telling them to do something else.
 pulse1_time = time.time()
 pulsegenerator.pulse(pulse_current, pulse_width)  # sends a pulse with given params
 # print('Pulse current: ', pulse_current)  # just to show the set value.
 plt.pause(100e-3)
 switchbox.switch(measure_assignments)  # tells the switchbox to switch to a measurement assignment
 pulsegenerator.measure_n(measure_current, measure_number)  # tells the k2461 to prepare a vxx measurement
-kiethley.measure_n(measure_number)  # tells the k2000 to prepare a vxy measurement
+keithley.measure_n(measure_number)  # tells the k2000 to prepare a vxy measurement
 plt.pause(100e-3)
-kiethley.trigger()  # actually starts measuring
+keithley.trigger()  # actually starts measuring
 pulsegenerator.trigger()  # actually starts the measuring
 # the instruments will wait for their "timeout" duration anyway but for large N manually waiting is necesasry
 plt.pause(measure_delay)
 
 # reads the values
 pos_time, pos_rxx = pulsegenerator.read_buffer(measure_number)
-pos_rxy = kiethley.read_buffer()
+pos_rxy = keithley.read_buffer()
 
 # repeat of above in reverse
 switchbox.switch(pulse2_assignments)
-plt.pause(100e-3)
+plt.pause(200e-3)
 pulse2_time = time.time()
-pulsegenerator.pulse(pulse_current, pulse_width)
-plt.pause(100e-3)
+pulsegenerator.pulse_current(pulse_current, pulse_width)
+plt.pause(200e-3)
 print('Pulse current: ', pulse_current)
 switchbox.switch(measure_assignments)
-pulsegenerator.measure_n(measure_current, measure_number)
-kiethley.measure_n(measure_number)
-plt.pause(100e-3)
-kiethley.trigger()
+pulsegenerator.measure_n(measure_current, measure_number, 2)
+keithley.measure_n(measure_number, 0, 2)
+plt.pause(200e-3)
+keithley.trigger()
 pulsegenerator.trigger()
 plt.pause(measure_delay)
 neg_time, neg_rxx = pulsegenerator.read_buffer(measure_number)
-neg_rxy = kiethley.read_buffer()
+neg_rxy = keithley.read_buffer()
 neg_time = neg_time
 
 
