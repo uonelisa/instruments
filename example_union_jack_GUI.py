@@ -29,11 +29,6 @@ class Worker(QtCore.QObject):
     is_stopped = False
 
     @QtCore.pyqtSlot()
-    def processA(self):
-        print("Worker.processA()")
-        self.finished.emit()
-
-    @QtCore.pyqtSlot()
     def processB(self):
         print("Worker.processB()")
         i = 1
