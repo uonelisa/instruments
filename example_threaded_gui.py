@@ -1,8 +1,6 @@
 import time
-import instruments
 import numpy as np
 import matplotlib
-
 matplotlib.use('Qt5Agg')
 import matplotlib.pyplot as plt
 import sys
@@ -73,7 +71,7 @@ start_button.clicked.connect(on_start)
 stop_button.clicked.connect(on_stop)
 layout.addWidget(start_button, 0, 0)
 layout.addWidget(stop_button, 1, 0)
-window.resize(480, 160)
+# window.resize(480, 160)
 
 # Starts the application running it's callback loops etc.
 app.exec_()
