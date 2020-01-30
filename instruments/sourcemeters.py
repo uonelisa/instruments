@@ -33,8 +33,8 @@ class K2401:
         self.k2401.write('trig:del 0')
         self.k2401.write('sour:del 0')
         self.k2401.write('sour:cle:auto on')
-        self.k2401.write('INIT')
-        self.k2401.write('*WAI')
+        self.k2401.write('init')
+        self.k2401.write('*wai')
 
     # Sets up the parameters to measure data and store it in buffer
     def measure_n(self, current, num, nplc=2):
@@ -113,7 +113,7 @@ class K2461:
 
     # sets up a measurement of "num" points with applied probe current of "current" Amps
     def measure_n(self, current, num, nplc=2):
-        # self.k2400.write('sour:func curr')
+        self.k2461.write('sour:func curr')
         self.k2461.write('sour:curr:rang 200e-6')
         self.k2461.write(f'sour:curr {current}')
 
@@ -135,10 +135,11 @@ class K2461:
         self.k2461.write('outp off')
         # print(self.k2400.query('trac:act? "defBuffer1"'))
         try:
-            data = np.array(self.k2461.query_ascii_values(f'trac:data? 1, {num}, "defBuffer1", read, rel'))
-            t = data[1::2]
-            d = data[0::2]
-            return t, d
+            data = np.array(self.k2461.query_ascii_values(f'trac:data? 1, {num}, "defBuffer1", sour, read, rel'))
+            t = data[2::3]
+            d = data[1::3]
+            c = data[0::3]
+            return t, d ,c
         except:
             print('could not read data from K2461')
             return np.array([]), np.array([])

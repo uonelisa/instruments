@@ -28,7 +28,7 @@ balance_box.connect(5)
 pg.connect()
 
 # set k2461 ready for 100uA probe current 2 wire with nplc 2
-pg.enable_2_wire_probe(100e-6, 2)
+pg.enable_2_wire_probe(1e-3, 2)
 balance_box.reset_resistances()
 switch_box.switch(assignments_0)
 time.sleep(2)
@@ -63,10 +63,11 @@ resistance_measured["D"] = int((v / c) / 2)
 resistance_measured["H"] = int((v / c) / 2)
 print(resistance_measured)
 max_res = int(max(resistance_measured.values()) + 50)
+pg.disable_probe_current()
 
 for pin, res in resistance_measured.items():
     resistance_assigned[pin] = max_res - int(res)
 
 balance_box.set_resistances(resistance_assigned)
 
-print(resistance_assigned, resistance_measured)
+print(resistance_assigned)
