@@ -40,7 +40,7 @@ class K2000:
         return data
 
     # Sets up the instrument ready to measure Rxy given a probe current from a sourcemeter
-    def measure_n(self, num, volt_range, nplc):
+    def measure_n(self, num, volt_range=0, nplc=2):
         self.k2000.write('sens:func "volt"')  # measure volts
         self.k2000.write(f'sens:volt:nplc {nplc}')  # level of averaging min, 0.01 -> 10 ish Power line cycle:
         # 50hz 2-> 25hz measurement
@@ -60,7 +60,6 @@ class K2000:
         # 50hz 2-> 25hz measurement
         self.k2000.write(f'sens:volt:rang {volt_range}')  # auto-ranging
 
-
     # reads as single value from the k2000. Use after measure_one to read the value.
     def read_one(self):
         data = np.array([self.k2000.query_ascii_values('sens:data?')])
@@ -69,4 +68,4 @@ class K2000:
     def close(self):
         self.k2000.close()
 
-    # TODO: Set up k2000 to be able to measure 2 and 4 wire on it's own 
+    # TODO: Set up k2000 to be able to measure 2 and 4 wire on it's own

@@ -56,7 +56,7 @@ class BalanceBox:
         # A is channel 1, B is channel 2, C is channel 3 etc.
         self.binary_dictionary = {"A": '08', "B": '07', "C": '06', "D": '05', "E": '04', "F": '03', "G": '02',
                                   "H": '01'}
-        self.reset_assignments = {"A": 0, "B": 0, "C": 0, "D": 0, "E": 0, "F": 0, "G": 0, "H": 0}
+        # self.reset_assignments = {"A": 0, "B": 0, "C": 0, "D": 0, "E": 0, "F": 0, "G": 0, "H": 0}
         self.start_byte = 'FE'
         self.clear_byte = '11'
         self.enable_byte = '14'
