@@ -105,3 +105,7 @@ venv.bak/
 
 # idea files
 .idea/**
+
+# temporary data files
+neg_temp_data.txt
+pos_temp_data.txt

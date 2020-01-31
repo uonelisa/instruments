@@ -89,7 +89,7 @@
        <item row="2" column="1">
         <widget class="QLineEdit" name="probe_current_box">
          <property name="text">
-          <string>500</string>
+          <string>100</string>
          </property>
         </widget>
        </item>
@@ -110,7 +110,7 @@
        <item row="3" column="1">
         <widget class="QLineEdit" name="measurement_count_box">
          <property name="text">
-          <string>200</string>
+          <string>50</string>
          </property>
         </widget>
        </item>
@@ -124,7 +124,7 @@
        <item row="4" column="1">
         <widget class="QLineEdit" name="loop_count_box">
          <property name="text">
-          <string>2</string>
+          <string>1</string>
          </property>
         </widget>
        </item>
@@ -139,45 +139,45 @@
          <string>Ports</string>
         </property>
         <layout class="QFormLayout" name="formLayout">
-         <item row="0" column="0">
+         <item row="1" column="0">
           <widget class="QLabel" name="sb_port_label">
            <property name="text">
             <string>Switch Box Port</string>
            </property>
           </widget>
          </item>
-         <item row="0" column="1">
+         <item row="1" column="1">
           <widget class="QLineEdit" name="sb_port_box">
            <property name="text">
-            <string>3</string>
+            <string>4</string>
            </property>
           </widget>
          </item>
-         <item row="1" column="0">
+         <item row="2" column="0">
           <widget class="QLabel" name="bb_port_label">
            <property name="text">
             <string>Balance Box Port</string>
            </property>
           </widget>
          </item>
-         <item row="2" column="0">
+         <item row="2" column="1">
+          <widget class="QLineEdit" name="bb_port_box">
+           <property name="text">
+            <string>5</string>
+           </property>
+          </widget>
+         </item>
+         <item row="0" column="0">
           <widget class="QLabel" name="dmm_port_label">
            <property name="text">
             <string>Keithley 2000 Port</string>
            </property>
           </widget>
          </item>
-         <item row="2" column="1">
+         <item row="0" column="1">
           <widget class="QLineEdit" name="dmm_port_box">
            <property name="text">
-            <string>5</string>
-           </property>
-          </widget>
-         </item>
-         <item row="1" column="1">
-          <widget class="QLineEdit" name="bb_port_box">
-           <property name="text">
-            <string>4</string>
+            <string>3</string>
            </property>
           </widget>
          </item>
