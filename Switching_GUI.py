@@ -25,8 +25,11 @@ def alert_sound():
 
 class Worker(QtCore.QObject):
     finished = QtCore.pyqtSignal()
-    # dataReady = QtCore.pyqtSignal(np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray)
+    dataReady = QtCore.pyqtSignal(np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray)
+    mutex = QtCore.QMutex()
+    mutex.lock()
     is_stopped = False
+    mutex.unlock()
 
     sb = instruments.SwitchBox()
     bb = instruments.BalanceBox()
@@ -40,7 +43,9 @@ class Worker(QtCore.QObject):
     @QtCore.pyqtSlot()
     def start_measurement(self, mode, sb_port, bb_port, dmm_port, pulse_mag, pulse_width, meas_curr, meas_n, loop_n):
         self.data = np.array([])
+        self.mutex.lock()
         self.is_stopped = False
+        self.mutex.unlock()
 
         try:
             sb_port = int(sb_port)
@@ -79,7 +84,13 @@ class Worker(QtCore.QObject):
                 print('No Filename: Data not saved')
         else:
             print('Data not saved')
+        self.sb.close()
+        self.bb.close()
+        self.dmm.close()
+        self.pg.close()
         self.finished.emit()
+
+
 
     def pulse_voltage(self, pulse_mag, pulse_width, meas_curr, meas_n, loop_n):
         pos_time = np.array([])
@@ -98,8 +109,10 @@ class Worker(QtCore.QObject):
         plt.ylabel('R_xy (Ohms)')
         plt.ticklabel_format(useOffset=False)
         for i in range(loop_n):
+            self.mutex.lock()
             if self.is_stopped:
                 break
+            self.mutex.unlock()
             self.sb.switch(self.pulse1_assignments)
             time.sleep(200e-3)
             pulse1_time = time.time()
@@ -124,8 +137,10 @@ class Worker(QtCore.QObject):
             plt.plot(pos_time, pos_rxy, 'k+')
             plt.draw()
 
+            self.mutex.lock()
             if self.is_stopped:
                 break
+            self.mutex.unlock()
             self.sb.switch(self.pulse2_assignments)
             time.sleep(200e-3)
             pulse2_time = time.time()
@@ -149,7 +164,7 @@ class Worker(QtCore.QObject):
             plt.figure(2)
             plt.plot(neg_time, neg_rxy, 'r+')
             plt.draw()
-
+            self.dataReady.emit(pos_time, pos_rxx, pos_rxy, neg_time, neg_rxx, neg_rxy)
         data = np.column_stack((pos_time, pos_rxx, pos_rxy, neg_time, neg_rxx, neg_rxy))
         return data
 

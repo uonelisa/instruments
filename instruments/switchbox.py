@@ -102,3 +102,8 @@ class BalanceBox:
     def reset_resistances(self):
         self.bb.write(bytes.fromhex(self.start_byte + self.clear_byte + self.blank_byte + self.stop_byte))
         self.refresh()
+
+    def close(self):
+        self.reset_resistances()
+        self.refresh()
+        self.bb.close()
