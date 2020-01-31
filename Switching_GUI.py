@@ -189,7 +189,7 @@ class DataCollector(QtCore.QObject):
             plt.pause(200e-3)
             self.dmm.trigger()
             self.pg.trigger()
-            time.sleep(meas_n * 0.15)
+            plt.pause(meas_n * 0.15)
             t, vxx, curr = self.pg.read_buffer(meas_n)
             vxy = self.dmm.read_buffer()
             pos_time = np.append(pos_time, t + pulse1_time - start_time)
