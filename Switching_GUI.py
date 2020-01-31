@@ -5,10 +5,9 @@ import winsound
 import instruments
 import matplotlib.pyplot as plt
 import sys
-from tkinter import filedialog as dialog
-import tkinter.messagebox as mb
-from PyQt5 import QtCore, QtGui, QtWidgets
-from PyQt5.QtCore import Qt
+import serial
+import visa
+from PyQt5 import QtCore, QtWidgets, uic
 
 # Todo: replace tkinter boxes with qt
 
@@ -23,9 +22,9 @@ def alert_sound():
     winsound.PlaySound('C:\Windows\Media\Windows Notify System Generic.wav', winsound.SND_FILENAME)
 
 
-class Worker(QtCore.QObject):
+class DataCollector(QtCore.QObject):
     finished = QtCore.pyqtSignal()
-    dataReady = QtCore.pyqtSignal(np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray)
+    # dataReady = QtCore.pyqtSignal(np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray)
     mutex = QtCore.QMutex()
     mutex.lock()
     is_stopped = False
@@ -42,29 +41,25 @@ class Worker(QtCore.QObject):
 
     @QtCore.pyqtSlot()
     def start_measurement(self, mode, sb_port, bb_port, dmm_port, pulse_mag, pulse_width, meas_curr, meas_n, loop_n):
-        self.data = np.array([])
         self.mutex.lock()
         self.is_stopped = False
         self.mutex.unlock()
 
-        try:
-            sb_port = int(sb_port)
-        except ValueError:
-            error_sound()
-            print('Invalid port please enter integer value.')
-        self.sb.connect(sb_port)
-        self.bb.connect(bb_port)
-        self.dmm.connect(dmm_port)
-        self.pg.connect()
+        flag, sb_port, bb_port, dmm_port, pulse_mag, pulse_width, meas_curr, meas_n, loop_n = self.handle_inputs(
+            sb_port, bb_port, dmm_port, pulse_mag, pulse_width, meas_curr, meas_n, loop_n)
+        # If flag is true then something failed in parsing the inputs or connecting and the loop will not continue.
+        if flag:
+            return
+
         self.bb.enable_all()
         self.bb.set_resistances(self.resistance_assignments)
 
         if mode == "Pulse Current":
-            data = self.pulse_current(float(pulse_mag) * 1e-3, float(pulse_width) * 1e-3, float(meas_curr) * 1e-6,
-                                      int(meas_n), int(loop_n))
+            data = self.pulse_current(pulse_mag * 1e-3, pulse_width * 1e-3, meas_curr * 1e-6,
+                                      meas_n, loop_n)
         elif mode == "Pulse Voltage":
-            data = self.pulse_voltage(float(pulse_mag), float(pulse_width) * 1e-3, float(meas_curr) * 1e-6,
-                                      int(meas_n), int(loop_n))
+            data = self.pulse_voltage(pulse_mag, pulse_width * 1e-3, meas_curr * 1e-6,
+                                      meas_n, loop_n)
         else:
             error_sound()
             print("Error with pulsing method selection")
@@ -89,8 +84,6 @@ class Worker(QtCore.QObject):
         self.dmm.close()
         self.pg.close()
         self.finished.emit()
-
-
 
     def pulse_voltage(self, pulse_mag, pulse_width, meas_curr, meas_n, loop_n):
         pos_time = np.array([])
@@ -164,7 +157,7 @@ class Worker(QtCore.QObject):
             plt.figure(2)
             plt.plot(neg_time, neg_rxy, 'r+')
             plt.draw()
-            self.dataReady.emit(pos_time, pos_rxx, pos_rxy, neg_time, neg_rxx, neg_rxy)
+            # self.dataReady.emit(pos_time, pos_rxx, pos_rxy, neg_time, neg_rxx, neg_rxy)
         data = np.column_stack((pos_time, pos_rxx, pos_rxy, neg_time, neg_rxx, neg_rxy))
         return data
 
@@ -235,137 +228,159 @@ class Worker(QtCore.QObject):
         data = np.column_stack((pos_time, pos_rxx, pos_rxy, neg_time, neg_rxx, neg_rxy))
         return data
 
+    def handle_inputs(self, sb_port, bb_port, dmm_port, pulse_mag, pulse_width, meas_curr, meas_n, loop_n):
+        connection_flag = False
+        conversion_flag = False
 
-def on_start():
-    # QtCore.QMetaObject.invokeMethod(obj, 'connect_instruments', Qt.QueuedConnection)
-    data_collection_class.start_measurement(
-        pulse_type_combobox.currentText(),
-        sb_port_box.text(),
-        bb_port_box.text(),
-        dmm_port_box.text(),
-        pulse_magnitude_box.text(),
-        pulse_width_box.text(),
-        probe_current_box.text(),
-        measurement_count_box.text(),
-        loop_count_box.text()
-    )
+        try:
+            sb_port = int(sb_port)
+        except ValueError:
+            error_sound()
+            print('Invalid switchbox port please enter integer value.')
+            conversion_flag = True
+
+        try:
+            bb_port = int(bb_port)
+        except ValueError:
+            error_sound()
+            print('Invalid balance box port please enter integer value.')
+            conversion_flag = True
+
+        try:
+            dmm_port = int(dmm_port)
+        except ValueError:
+            error_sound()
+            print('Invalid keithley port please enter integer value.')
+            conversion_flag = True
+
+        try:
+            pulse_mag = float(pulse_mag)
+        except ValueError:
+            error_sound()
+            print('Invalid pulse magnitude. Please enter a valid float')
+            conversion_flag = True
+
+        try:
+            pulse_width = float(pulse_width)
+        except ValueError:
+            error_sound()
+            print('Invalid pulse width. Please enter a valid float')
+            conversion_flag = True
+
+        try:
+            meas_curr = float(meas_curr)
+        except ValueError:
+            error_sound()
+            print('Invalid probe current. Please enter a valid float')
+            conversion_flag = True
+
+        try:
+            meas_n = int(meas_n)
+        except ValueError:
+            error_sound()
+            print('Invalid measurement count per loop. Please enter an integer value')
+            conversion_flag = True
+
+        try:
+            loop_n = int(loop_n)
+        except ValueError:
+            error_sound()
+            print('Invalid number of loops. Please enter an integer value')
+            conversion_flag = True
+
+        try:
+            self.sb.connect(sb_port)
+        except serial.SerialException:
+            error_sound()
+            print(f"Could not connect to switch box on port COM{sb_port}.")
+            connection_flag = True
+
+        try:
+            self.bb.connect(bb_port)
+        except serial.SerialException:
+            error_sound()
+            print(f"Could not connect to balance box on port COM{bb_port}.")
+            connection_flag = True
+
+        try:
+            self.dmm.connect(dmm_port)
+        except visa.VisaIOError:
+            error_sound()
+            print(f"Could not connect to Keithley2000 on port COM{dmm_port}.")
+            connection_flag = True
+
+        try:
+            self.pg.connect()
+        except visa.VisaIOError:
+            error_sound()
+            print("Could not connect to keithley 2461.")
+            connection_flag = True
+
+        return connection_flag or conversion_flag, sb_port, bb_port, dmm_port, pulse_mag, pulse_width,\
+               meas_curr, meas_n, loop_n
 
 
-def on_mode_changed(string):
-    if string == "Pulse Current":
-        pulse_magnitude_units_label.setText("mA")
-        pulse_magnitude_box.setText("15")
-        print("pulsing_current")
-    elif string == "Pulse Voltage":
-        pulse_magnitude_units_label.setText("V")
-        pulse_magnitude_box.setText("5")
-        print("pulsing_voltage")
-    else:
-        error_sound()
-        print("Something went wrong with the combobox.")
+class MyGUI(QtWidgets.QMainWindow):
+    def __init__(self):
+        super(MyGUI, self).__init__()  # Call the inherited classes __init__ method
+        uic.loadUi('switching_GUI_layoutfile.ui', self)  # Load the .ui file
+        self.show()  # Show the GUI
+
+        # connect buttons and actions to functions.
+        self.pulse_type_combobox.currentTextChanged.connect(self.on_mode_changed)
+        self.start_button.clicked.connect(self.on_start)
+        self.stop_button.clicked.connect(self.on_stop)
+        self.thread = QtCore.QThread()
+        self.data_collector = DataCollector()
+        self.data_collector.moveToThread(self.thread)
+        self.data_collector.finished.connect(self.on_loop_over)
+        self.thread.start()
+
+    def on_start(self):
+        self.data_collector.start_measurement(
+            self.pulse_type_combobox.currentText(),
+            self.sb_port_box.text(),
+            self.bb_port_box.text(),
+            self.dmm_port_box.text(),
+            self.pulse_magnitude_box.text(),
+            self.pulse_width_box.text(),
+            self.probe_current_box.text(),
+            self.measurement_count_box.text(),
+            self.loop_count_box.text()
+        )
+
+    def on_mode_changed(self, string):
+        if string == "Pulse Current":
+            self.pulse_magnitude_units_label.setText("mA")
+            self.pulse_magnitude_box.setText("15")
+            print("pulsing_current")
+        elif string == "Pulse Voltage":
+            self.pulse_magnitude_units_label.setText("V")
+            self.pulse_magnitude_box.setText("5")
+            print("pulsing_voltage")
+        else:
+            error_sound()
+            print("Something went wrong with the combobox.")
+
+    def on_stop(self):
+        mutex = QtCore.QMutex()
+        try:
+            mutex.lock()
+            self.data_collector.is_stopped = True
+            mutex.unlock()
+        except:
+            print("Failed to write due to mutex lock. Trying again.")
+            mutex.lock()
+            self.data_collector.is_stopped = True
+            mutex.unlock()
+
+    def on_loop_over(self):
+        print('Loop Finished')
 
 
-def on_stop():
-    data_collection_class.is_stopped = True
-
-
-def on_loop_over():
-    print('Loop Finished')
-
-
-# Creates an application. Formality of QT
-app = QtWidgets.QApplication(sys.argv)
-thread = QtCore.QThread()
-data_collection_class = Worker()
-# data_collection_class.DataReady.connect(onDataReady())
-
-data_collection_class.moveToThread(thread)
-data_collection_class.finished.connect(on_loop_over)
-
-thread.start()
-
-# This large section creates the GUI and connects all the active elements to callback fucntions
-window = QtWidgets.QWidget()
-window.setWindowTitle("Current Pulsing")
-
-# Create the layouts
-main_layout = QtWidgets.QHBoxLayout(window)
-input_grid_layout = QtWidgets.QGridLayout()
-lhs_layout = QtWidgets.QVBoxLayout()
-rhs_layout = QtWidgets.QVBoxLayout()
-ports_layout = QtWidgets.QGridLayout()
-buttons_layout = QtWidgets.QVBoxLayout()
-
-# create the inputs group and assign it to the layout and pop it onto the lhs layout which allows the screen to be
-# split evenly in half despite having two groups on RHS. This is then added to the the main layout.
-input_group = QtWidgets.QGroupBox("Inputs")
-pulse_type_combobox = QtWidgets.QComboBox(input_group)
-pulse_type_combobox.addItem("Pulse Current")
-pulse_type_combobox.addItem("Pulse Voltage")
-pulse_type_combobox.currentTextChanged.connect(on_mode_changed)
-pulse_magnitude_box = QtWidgets.QLineEdit('15', input_group)
-pulse_magnitude_units_label = QtWidgets.QLabel('mA', input_group)
-pulse_width_label = QtWidgets.QLabel('Pulse Width', input_group)
-pulse_width_box = QtWidgets.QLineEdit('1', input_group)
-pulse_width_units_label = QtWidgets.QLabel('ms', input_group)
-probe_current_label = QtWidgets.QLabel('Probe Current', input_group)
-probe_current_box = QtWidgets.QLineEdit('200', input_group)
-probe_current_units_label = QtWidgets.QLabel('uA', input_group)
-measurement_count_label = QtWidgets.QLabel('n per loop', input_group)
-measurement_count_box = QtWidgets.QLineEdit('100', input_group)
-loop_count_label = QtWidgets.QLabel('Loop Count', input_group)
-loop_count_box = QtWidgets.QLineEdit('2', input_group)
-input_grid_layout.addWidget(pulse_type_combobox, 0, 0)
-input_grid_layout.addWidget(pulse_magnitude_box, 0, 1)
-input_grid_layout.addWidget(pulse_magnitude_units_label, 0, 2)
-input_grid_layout.addWidget(pulse_width_label, 1, 0)
-input_grid_layout.addWidget(pulse_width_box, 1, 1)
-input_grid_layout.addWidget(pulse_width_units_label, 1, 2)
-input_grid_layout.addWidget(probe_current_label, 2, 0)
-input_grid_layout.addWidget(probe_current_box, 2, 1)
-input_grid_layout.addWidget(probe_current_units_label, 2, 2)
-input_grid_layout.addWidget(measurement_count_label, 3, 0)
-input_grid_layout.addWidget(measurement_count_box, 3, 1)
-input_grid_layout.addWidget(loop_count_label, 4, 0)
-input_grid_layout.addWidget(loop_count_box, 4, 1)
-input_group.setLayout(input_grid_layout)
-lhs_layout.addWidget(input_group)
-main_layout.addLayout(lhs_layout)
-
-# Create ports group and populate the associated layout and add this to the ports layout grid
-ports_group = QtWidgets.QGroupBox("Ports")
-sb_port_label = QtWidgets.QLabel('Switch Box Port', ports_group)
-sb_port_box = QtWidgets.QLineEdit('3', ports_group)
-bb_port_label = QtWidgets.QLabel('Balance Box Port', ports_group)
-bb_port_box = QtWidgets.QLineEdit('4', ports_group)
-dmm_port_label = QtWidgets.QLabel('Keithley 2000 Port', ports_group)
-dmm_port_box = QtWidgets.QLineEdit('5', ports_group)
-ports_layout.addWidget(sb_port_label, 0, 0)
-ports_layout.addWidget(sb_port_box, 0, 1)
-ports_layout.addWidget(bb_port_label, 1, 0)
-ports_layout.addWidget(bb_port_box, 1, 1)
-ports_layout.addWidget(dmm_port_label, 2, 0)
-ports_layout.addWidget(dmm_port_box, 2, 1)
-ports_group.setLayout(ports_layout)
-
-# Create buttons group and add to vstack
-buttons_group = QtWidgets.QGroupBox("")
-start_button = QtWidgets.QPushButton('Start', buttons_group)
-start_button.clicked.connect(on_start)
-stop_button = QtWidgets.QPushButton('Stop', buttons_group)
-stop_button.clicked.connect(on_stop)
-buttons_layout.addWidget(start_button, 0)
-buttons_layout.addWidget(stop_button, 1)
-buttons_group.setLayout(buttons_layout)
-
-# construct the vstack of port group then buttons group on RHS and add to main layout (which is a vertical split)
-rhs_layout.addWidget(ports_group, 0)
-rhs_layout.addWidget(buttons_group, 1)
-main_layout.addLayout(rhs_layout)
-
-# set the window as small as it can be. looks best.
-window.resize(0, 0)
-window.show()
 # Starts the application running it's callback loops etc.
 if __name__ == '__main__':
+    app = QtWidgets.QApplication(sys.argv)
+    window = MyGUI()
+    window.resize(0, 0)
     app.exec_()
