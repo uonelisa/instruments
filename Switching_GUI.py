@@ -35,7 +35,7 @@ class DataCollector(QtCore.QObject):
     bb = instruments.BalanceBox()
     dmm = instruments.K2000()
     pg = instruments.K2461()
-    pulse_assignments = {"I+": "B", "I-": "F"}  # configuration for a pulse from B to F
+    pulse1_assignments = {"I+": "B", "I-": "F"}  # configuration for a pulse from B to F
     pulse2_assignments = {"I+": "D", "I-": "H"}  # configuration for a pulse from D to H
     measure_assignments = {"V1+": "C", "V1-": "G", "V2+": "B", "V2-": "D", "I+": "A", "I-": "E"}  # here V1 is Vxy
     resistance_assignments = {'A': 86, 'B': 64, 'C': 50, 'D': 53, 'E': 86, 'F': 64, 'G': 50, 'H': 53}
@@ -46,7 +46,7 @@ class DataCollector(QtCore.QObject):
         self.is_stopped = False
         self.mutex.unlock()
 
-        error_flag, sb_port, bb_port, dmm_port, pulse_mag, pulse_width, meas_curr, meas_n, loop_n = self.handle_inputs(
+        error_flag, pulse_mag, pulse_width, meas_curr, meas_n, loop_n = self.handle_inputs(
             sb_port, bb_port, dmm_port, pulse_mag, pulse_width, meas_curr, meas_n, loop_n)
         # If flag is true then something failed in parsing the inputs or connecting and the loop will not continue.
         if error_flag:
@@ -57,7 +57,7 @@ class DataCollector(QtCore.QObject):
 
         if mode == "Pulse Current":
             self.pulse_and_measure(False, pulse_mag * 1e-3, pulse_width * 1e-3, meas_curr * 1e-6,
-                                      meas_n, loop_n)
+                                   meas_n, loop_n)
         elif mode == "Pulse Voltage":
             self.pulse_and_measure(True, pulse_mag, pulse_width * 1e-3, meas_curr * 1e-6,
                                    meas_n, loop_n)
@@ -69,6 +69,7 @@ class DataCollector(QtCore.QObject):
         self.bb.close()
         self.dmm.close()
         self.pg.close()
+        # time.sleep(1)
         self.finished.emit()
 
     def pulse_and_measure(self, volts, pulse_mag, pulse_width, meas_curr, meas_n, loop_n):
@@ -120,7 +121,6 @@ class DataCollector(QtCore.QObject):
             t, vxx, curr = self.pg.read_buffer(meas_n)
             vxy = self.dmm.read_buffer()
             self.neg_data_ready.emit(t + pulse2_time - start_time, vxx / curr, vxy / curr)
-        self.finished.emit()
 
     def handle_inputs(self, sb_port, bb_port, dmm_port, pulse_mag, pulse_width, meas_curr, meas_n, loop_n):
         connection_flag = False
@@ -210,8 +210,7 @@ class DataCollector(QtCore.QObject):
             print("Could not connect to keithley 2461.")
             connection_flag = True
 
-        return connection_flag or conversion_flag, sb_port, bb_port, dmm_port, pulse_mag, pulse_width, \
-               meas_curr, meas_n, loop_n
+        return connection_flag or conversion_flag, pulse_mag, pulse_width, meas_curr, meas_n, loop_n
 
 
 class MyGUI(QtWidgets.QMainWindow):
@@ -220,26 +219,7 @@ class MyGUI(QtWidgets.QMainWindow):
         uic.loadUi('switching_GUI_layoutfile.ui', self)  # Load the .ui file
         self.show()  # Show the GUI
         self.connect_signals()  # this also creates a new thread.
-        self.create_plots()  # make figure axes and so on
         self.thread.start()  # start the thread created in "connect_signals()"
-
-    def create_plots(self):
-        # creates plots and axes objects to be used to plot data.
-        self.rxx_fig = plt.figure(1)
-        self.rxx_ax = plt.gca()
-        self.rxx_pos_line, = self.rxx_ax.plot(self.pos_time, self.pos_rxx, 'b.')
-        self.rxx_neg_line, = self.rxx_ax.plot(self.neg_time, self.neg_rxx, 'k.')
-        self.rxx_ax.xlabel('Time (s)')
-        self.rxx_ax.ylabel('R_xx (Ohms)')
-        self.rxx_ax.ticklabel_format(useOffset=False)
-
-        self.rxy_fig = plt.figure(2)
-        self.rxy_ax = plt.gca()
-        self.rxy_pos_line, = self.rxy_ax.plot(self.pos_time, self.pos_rxy, 'b.')
-        self.rxy_neg_line, = self.rxy_ax.plot(self.neg_time, self.neg_rxy, 'k.')
-        self.rxy_ax.xlabel('Time (s)')
-        self.rxy_ax.ylabel('R_xy (Ohms)')
-        self.rxy_ax.ticklabel_format(useOffset=False)
 
     def connect_signals(self):
         # Connect gui elements to slots.
@@ -261,6 +241,7 @@ class MyGUI(QtWidgets.QMainWindow):
         self.neg_rxx = np.array([])
         self.pos_rxy = np.array([])
         self.neg_rxy = np.array([])
+        self.create_plots()  # make figure axes and so on
         # start the data collector method (can't use invoke method because can't pass arguments)
         self.data_collector.start_measurement(
             self.pulse_type_combobox.currentText(),
@@ -273,6 +254,24 @@ class MyGUI(QtWidgets.QMainWindow):
             self.measurement_count_box.text(),
             self.loop_count_box.text()
         )
+
+    def create_plots(self):
+        # creates plots and axes objects to be used to plot data.
+        self.rxx_fig = plt.figure(1)
+        self.rxx_ax = plt.gca()
+        self.rxx_pos_line, = self.rxx_ax.plot(self.pos_time, self.pos_rxx, 'k.')
+        self.rxx_neg_line, = self.rxx_ax.plot(self.neg_time, self.neg_rxx, 'r.')
+        self.rxx_ax.set_xlabel('Time (s)')
+        self.rxx_ax.set_ylabel('R_xx (Ohms)')
+        self.rxx_ax.ticklabel_format(useOffset=False)
+
+        self.rxy_fig = plt.figure(2)
+        self.rxy_ax = plt.gca()
+        self.rxy_pos_line, = self.rxy_ax.plot(self.pos_time, self.pos_rxy, 'k.')
+        self.rxy_neg_line, = self.rxy_ax.plot(self.neg_time, self.neg_rxy, 'r.')
+        self.rxy_ax.set_xlabel('Time (s)')
+        self.rxy_ax.set_ylabel('R_xy (Ohms)')
+        self.rxy_ax.ticklabel_format(useOffset=False)
 
     def on_mode_changed(self, string):
         # Redraw a few things when changing pulse mode.
@@ -303,22 +302,28 @@ class MyGUI(QtWidgets.QMainWindow):
 
     def on_loop_over(self):
         # when finished is emitted, this will save the data (I hope).
-        data = np.column_stack((self.pos_time, self.pos_rxx, self.pos_rxy, self.neg_time, self.neg_rxx, self.neg_rxy))
-        alert_sound()
-        prompt_window = QtWidgets.QWidget()
-        if QtWidgets.QMessageBox.question(prompt_window, 'Save Data?',
-                                          'Would you like to save your data?', QtWidgets.QMessageBox.Yes,
-                                          QtWidgets.QMessageBox.No) == QtWidgets.QMessageBox.Yes:
-            save_window = QtWidgets.QWidget()
-            name, _ = QtWidgets.QFileDialog.getSaveFileName(save_window, "Save Data", "",
-                                                            "Text Files (*.txt);; Data Files (*.dat);; All Files (*)")
-            if name:  # if a name was entered, don't save otherwise
-                np.savetxt(name, data, newline='\r\n', delimiter='\t')  # save
-                print(f'Data saved as {name}')
+        try:
+            data = np.column_stack(
+                (self.pos_time, self.pos_rxx, self.pos_rxy, self.neg_time, self.neg_rxx, self.neg_rxy))
+            alert_sound()
+            prompt_window = QtWidgets.QWidget()
+            if QtWidgets.QMessageBox.question(prompt_window, 'Save Data?',
+                                              'Would you like to save your data?', QtWidgets.QMessageBox.Yes,
+                                              QtWidgets.QMessageBox.No) == QtWidgets.QMessageBox.Yes:
+                save_window = QtWidgets.QWidget()
+                name, _ = QtWidgets.QFileDialog.getSaveFileName(save_window, "Save Data", "",
+                                                                "Text Files (*.txt);; Data Files (*.dat);; All Files (*)")
+                if name:  # if a name was entered, don't save otherwise
+                    np.savetxt(name, data, newline='\n', delimiter='\t')  # save
+                    print(f'Data saved as {name}')
+                else:
+                    print('No Filename: Data not saved')
             else:
-                print('No Filename: Data not saved')
-        else:
-            print('Data not saved')
+                print('Data not saved')
+        except ValueError:
+            print("Could not stack. Please manually combine and save pos_temp_data and neg_temp_data.")
+        except:
+            print("Data not saved, something went wrong!")
 
     def on_pos_data_ready(self, t, rxx, rxy):
         # After pos pulse, plot and store the data then save a backup
@@ -328,8 +333,8 @@ class MyGUI(QtWidgets.QMainWindow):
         self.rxx_pos_line.set_data(self.pos_time, self.pos_rxx)
         self.rxy_pos_line.set_data(self.pos_time, self.pos_rxy)
         self.refresh_graphs()
-        data = np.column_stack((self.pos_time, self.pos_rxx, self.pos_rxy, self.neg_time, self.neg_rxx, self.neg_rxy))
-        np.savetxt('temp_data.txt', data, newline='\r\n', delimiter='\t')
+        data = np.column_stack((self.pos_time, self.pos_rxx, self.pos_rxy))
+        np.savetxt('pos_temp_data.txt', data, newline='\n', delimiter='\t')
 
     def on_neg_data_ready(self, t, rxx, rxy):
         # After neg pulse, plot and store the data then save a backup
@@ -339,18 +344,18 @@ class MyGUI(QtWidgets.QMainWindow):
         self.rxx_neg_line.set_data(self.neg_time, self.neg_rxx)
         self.rxy_neg_line.set_data(self.neg_time, self.neg_rxy)
         self.refresh_graphs()
-        data = np.column_stack((self.pos_time, self.pos_rxx, self.pos_rxy, self.neg_time, self.neg_rxx, self.neg_rxy))
-        np.savetxt('temp_data.txt', data, newline='\r\n', delimiter='\t')
+        data = np.column_stack((self.neg_time, self.neg_rxx, self.neg_rxy))
+        np.savetxt('neg_temp_data.txt', data, newline='\n', delimiter='\t')
 
     def refresh_graphs(self):
         # Simply redraw the axes after changing data.
         self.rxx_ax.relim()
         self.rxx_ax.autoscale_view()
-        self.rxx_fig.canvas.flush_events()
+        self.rxx_fig.canvas.draw()
         self.rxy_ax.relim()
         self.rxy_ax.autoscale_view()
-        self.rxy_fig.canvas.flush_events()
-        # todo: test using plt.draw() instead. probably won't work tho.
+        self.rxy_fig.canvas.draw()
+
 
 # Starts the application running it's callback loops etc.
 if __name__ == '__main__':
