@@ -8,14 +8,11 @@ __all__ = ['error_sound', 'alert_sound', 'RedPitaya']
 
 
 def error_sound():
-    winsound.Beep(880, 200)
-    winsound.Beep(440, 200)
+    winsound.PlaySound('C:\Windows\Media\Windows Background.wav', winsound.SND_FILENAME)
 
 
 def alert_sound():
-    winsound.Beep(440, 200)
-    winsound.Beep(660, 200)
-    winsound.Beep(880, 200)
+    winsound.PlaySound('C:\Windows\Media\Windows Notify System Generic.wav', winsound.SND_FILENAME)
 
 
 class RedPitaya:
