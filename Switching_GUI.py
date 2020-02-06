@@ -35,8 +35,8 @@ class DataCollector(QtCore.QObject):
     bb = instruments.BalanceBox()
     dmm = instruments.K2000()
     pg = instruments.K2461()
-    pulse1_assignments = {"I+": "A", "I-": "E"}  # configuration for a pulse from B to F
-    pulse2_assignments = {"I+": "E", "I-": "A"}  # configuration for a pulse from D to H
+    pulse1_assignments = {"I+": "C", "I-": "G"}  # configuration for a pulse from B to F
+    pulse2_assignments = {"I+": "G", "I-": "C"}  # configuration for a pulse from D to H
     measure_assignments = {"V1+": "C", "V1-": "G", "V2+": "B", "V2-": "D", "I+": "A", "I-": "E"}  # here V1 is Vxy
     resistance_assignments = {'A': 86, 'B': 64, 'C': 50, 'D': 58, 'E': 86, 'F': 64, 'G': 50, 'H': 58}
 
@@ -263,26 +263,24 @@ class MyGUI(QtWidgets.QMainWindow):
         #     plt.close(self.rxy_fig)
         # except:
         #     print("no plots to close")
-        self.rxx_fig = plt.figure("Plots of Rxx")
-        self.rxx_ax = plt.gca()
+        self.graph_fig = plt.figure("Resistance Plots")
+        self.rxx_ax = plt.subplot(211)
         self.rxx_ax.clear()
         self.rxx_pos_line, = self.rxx_ax.plot(self.pos_time, self.pos_rxx, 'k.')
         self.rxx_neg_line, = self.rxx_ax.plot(self.neg_time, self.neg_rxx, 'r.')
-        self.rxx_ax.set_xlabel('Time (s)')
+        # self.rxx_ax.set_xlabel('Time (s)')
         self.rxx_ax.set_ylabel('R_xx (Ohms)')
         self.rxx_ax.ticklabel_format(useOffset=False)
 
-        self.rxy_fig = plt.figure("Plots of Rxy")
-        self.rxy_ax = plt.gca()
+        self.rxy_ax = plt.subplot(212)
         self.rxy_ax.clear()
         self.rxy_pos_line, = self.rxy_ax.plot(self.pos_time, self.pos_rxy, 'k.')
         self.rxy_neg_line, = self.rxy_ax.plot(self.neg_time, self.neg_rxy, 'r.')
         self.rxy_ax.set_xlabel('Time (s)')
         self.rxy_ax.set_ylabel('R_xy (Ohms)')
         self.rxy_ax.ticklabel_format(useOffset=False)
-
         plt.show(block=False)
-        plt.draw()
+        self.refresh_graphs()
 
     def on_mode_changed(self, string):
         # Redraw a few things when changing pulse mode.
@@ -364,10 +362,9 @@ class MyGUI(QtWidgets.QMainWindow):
         # Simply redraw the axes after changing data.
         self.rxx_ax.relim()
         self.rxx_ax.autoscale_view()
-        self.rxx_fig.canvas.draw()
         self.rxy_ax.relim()
         self.rxy_ax.autoscale_view()
-        self.rxy_fig.canvas.draw()
+        self.graph_fig.canvas.draw()
 
 
 # Starts the application running it's callback loops etc.
