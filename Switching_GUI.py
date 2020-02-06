@@ -40,7 +40,7 @@ class DataCollector(QtCore.QObject):
     measure_assignments = {"V1+": "C", "V1-": "G", "V2+": "B", "V2-": "D", "I+": "A", "I-": "E"}  # here V1 is Vxy
     resistance_assignments = {'A': 86, 'B': 64, 'C': 50, 'D': 58, 'E': 86, 'F': 64, 'G': 50, 'H': 58}
 
-    @QtCore.pyqtSlot()
+    @QtCore.pyqtSlot(str, str, str, str, str, str, str, str, str)
     def start_measurement(self, mode, sb_port, bb_port, dmm_port, pulse_mag, pulse_width, meas_curr, meas_n, loop_n):
         self.mutex.lock()
         self.is_stopped = False
@@ -243,18 +243,17 @@ class MyGUI(QtWidgets.QMainWindow):
         self.neg_rxy = np.array([])
         self.create_plots()  # make figure axes and so on
         # start the data collector method (can't use invoke method because can't pass arguments)
-
-        self.data_collector.start_measurement(
-            self.pulse_type_combobox.currentText(),
-            self.sb_port_box.text(),
-            self.bb_port_box.text(),
-            self.dmm_port_box.text(),
-            self.pulse_magnitude_box.text(),
-            self.pulse_width_box.text(),
-            self.probe_current_box.text(),
-            self.measurement_count_box.text(),
-            self.loop_count_box.text()
-        )
+        QtCore.QMetaObject.invokeMethod(self.data_collector, 'start_measurement', QtCore.Qt.QueuedConnection,
+                                        QtCore.Q_ARG(str, self.pulse_type_combobox.currentText()),
+                                        QtCore.Q_ARG(str, self.sb_port_box.text()),
+                                        QtCore.Q_ARG(str, self.bb_port_box.text()),
+                                        QtCore.Q_ARG(str, self.dmm_port_box.text()),
+                                        QtCore.Q_ARG(str, self.pulse_magnitude_box.text()),
+                                        QtCore.Q_ARG(str, self.pulse_width_box.text()),
+                                        QtCore.Q_ARG(str, self.probe_current_box.text()),
+                                        QtCore.Q_ARG(str, self.measurement_count_box.text()),
+                                        QtCore.Q_ARG(str, self.loop_count_box.text())
+                                        )
 
     def create_plots(self):
         # creates plots and axes objects to be used to plot data.
