@@ -38,7 +38,7 @@ class DataCollector(QtCore.QObject):
     pulse1_assignments = {"I+": "B", "I-": "F"}  # configuration for a pulse from B to F
     pulse2_assignments = {"I+": "D", "I-": "H"}  # configuration for a pulse from D to H
     measure_assignments = {"V1+": "C", "V1-": "G", "V2+": "B", "V2-": "D", "I+": "A", "I-": "E"}  # here V1 is Vxy
-    resistance_assignments = {'A': 86, 'B': 64, 'C': 50, 'D': 53, 'E': 86, 'F': 64, 'G': 50, 'H': 53}
+    resistance_assignments = {'A': 86, 'B': 64, 'C': 50, 'D': 58, 'E': 86, 'F': 64, 'G': 50, 'H': 58}
 
     @QtCore.pyqtSlot()
     def start_measurement(self, mode, sb_port, bb_port, dmm_port, pulse_mag, pulse_width, meas_curr, meas_n, loop_n):
@@ -69,7 +69,7 @@ class DataCollector(QtCore.QObject):
         self.bb.close()
         self.dmm.close()
         self.pg.close()
-        # time.sleep(1)
+        # plt.pause()(1)
         self.finished.emit()
 
     def pulse_and_measure(self, volts, pulse_mag, pulse_width, meas_curr, meas_n, loop_n):
@@ -81,20 +81,20 @@ class DataCollector(QtCore.QObject):
                 break
             self.mutex.unlock()
             self.sb.switch(self.pulse1_assignments)
-            time.sleep(200e-3)
+            plt.pause(200e-3)
             pulse1_time = time.time()
             if volts:
                 self.pg.pulse_voltage(pulse_mag, pulse_width)
             else:
                 self.pg.pulse_current(pulse_mag, pulse_width)
-            time.sleep(200e-3)
+            plt.pause(200e-3)
             self.sb.switch(self.measure_assignments)
             self.pg.measure_n(meas_curr, meas_n)
             self.dmm.measure_n(meas_n)
-            time.sleep(200e-3)
+            plt.pause(200e-3)
             self.dmm.trigger()
             self.pg.trigger()
-            time.sleep(meas_n * 0.15)
+            plt.pause(meas_n * 0.2)
             t, vxx, curr = self.pg.read_buffer(meas_n)
             vxy = self.dmm.read_buffer()
             self.pos_data_ready.emit(t + pulse1_time - start_time, vxx / curr, vxy / curr)
@@ -104,20 +104,20 @@ class DataCollector(QtCore.QObject):
                 break
             self.mutex.unlock()
             self.sb.switch(self.pulse2_assignments)
-            time.sleep(200e-3)
+            plt.pause(200e-3)
             pulse2_time = time.time()
             if volts:
                 self.pg.pulse_voltage(pulse_mag, pulse_width)
             else:
                 self.pg.pulse_current(pulse_mag, pulse_width)
-            time.sleep(200e-3)
+            plt.pause(200e-3)
             self.sb.switch(self.measure_assignments)
             self.pg.measure_n(meas_curr, meas_n)
             self.dmm.measure_n(meas_n)
-            time.sleep(200e-3)
+            plt.pause(200e-3)
             self.dmm.trigger()
             self.pg.trigger()
-            plt.pause(meas_n * 0.15)
+            plt.pause(meas_n * 0.2)
             t, vxx, curr = self.pg.read_buffer(meas_n)
             vxy = self.dmm.read_buffer()
             self.neg_data_ready.emit(t + pulse2_time - start_time, vxx / curr, vxy / curr)
@@ -243,6 +243,7 @@ class MyGUI(QtWidgets.QMainWindow):
         self.neg_rxy = np.array([])
         self.create_plots()  # make figure axes and so on
         # start the data collector method (can't use invoke method because can't pass arguments)
+
         self.data_collector.start_measurement(
             self.pulse_type_combobox.currentText(),
             self.sb_port_box.text(),
@@ -257,6 +258,10 @@ class MyGUI(QtWidgets.QMainWindow):
 
     def create_plots(self):
         # creates plots and axes objects to be used to plot data.
+        if self.rxx_fig:
+            plt.close(self.rxx_fig)
+        if self.rxy_fig:
+            plt.close(self.rxy_fig)
         self.rxx_fig = plt.figure(1)
         self.rxx_ax = plt.gca()
         self.rxx_pos_line, = self.rxx_ax.plot(self.pos_time, self.pos_rxx, 'k.')

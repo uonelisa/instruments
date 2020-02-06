@@ -30,6 +30,7 @@ pg.connect()
 # set k2461 ready for 100uA probe current 2 wire with nplc 2
 pg.enable_2_wire_probe(1e-3, 2)
 balance_box.reset_resistances()
+balance_box.set_resistances(resistance_assigned)
 switch_box.switch(assignments_0)
 time.sleep(2)
 c, v = pg.read_one()
@@ -61,13 +62,43 @@ time.sleep(2)
 c, v = pg.read_one()
 resistance_measured["D"] = int((v / c) / 2)
 resistance_measured["H"] = int((v / c) / 2)
-print(resistance_measured)
+
+
+print('resistance measured = ', resistance_measured)
 max_res = int(max(resistance_measured.values()) + 50)
-pg.disable_probe_current()
+
 
 for pin, res in resistance_measured.items():
-    resistance_assigned[pin] = max_res - int(res)
+    resistance_assigned[pin] = min(max_res - int(res), 255)
 
 balance_box.set_resistances(resistance_assigned)
 
-print(resistance_assigned)
+print('resistance assigned = ', resistance_assigned)
+
+
+switch_box.switch(assignments_0)
+time.sleep(2)  # delay to allow the sb to switch
+c, v = pg.read_one()  # read one value
+resistance_measured["G"] = int((v / c) / 2)  # store half resistance rounded down in each channel part of the pair
+resistance_measured["C"] = int((v / c) / 2)
+
+switch_box.switch(assignments_45)
+time.sleep(2)
+c, v = pg.read_one()
+resistance_measured["F"] = int((v / c) / 2)
+resistance_measured["B"] = int((v / c) / 2)
+
+switch_box.switch(assignments_90)
+time.sleep(2)
+c, v = pg.read_one()
+resistance_measured["E"] = int((v / c) / 2)
+resistance_measured["A"] = int((v / c) / 2)
+
+switch_box.switch(assignments_135)
+time.sleep(2)
+c, v = pg.read_one()
+resistance_measured["D"] = int((v / c) / 2)
+resistance_measured["H"] = int((v / c) / 2)
+
+print('New resistances = ', resistance_measured)
+pg.disable_probe_current()

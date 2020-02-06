@@ -54,8 +54,8 @@ class BalanceBox:
         self.enable_all_byte = "FF"
         # Reverse becuase of enable byte format (in powers of 2) "7:h 6:G 5:F 4:E 3:D 2:C 1:B 0:A"
         # A is channel 1, B is channel 2, C is channel 3 etc.
-        self.binary_dictionary = {"A": '08', "B": '07', "C": '06', "D": '05', "E": '04', "F": '03', "G": '02',
-                                  "H": '01'}
+        self.binary_dictionary = {"A": '01', "B": '02', "C": '03', "D": '04', "E": '05', "F": '06', "G": '07',
+                                  "H": '08'}
         # self.reset_assignments = {"A": 0, "B": 0, "C": 0, "D": 0, "E": 0, "F": 0, "G": 0, "H": 0}
         self.start_byte = 'FE'
         self.clear_byte = '11'

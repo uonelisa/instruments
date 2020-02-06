@@ -37,12 +37,12 @@
          </property>
          <item>
           <property name="text">
-           <string>Pulse Current</string>
+           <string>Pulse Voltage</string>
           </property>
          </item>
          <item>
           <property name="text">
-           <string>Pulse Voltage</string>
+           <string>Pulse Current</string>
           </property>
          </item>
         </widget>
