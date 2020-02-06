@@ -99,7 +99,7 @@ class K2461:
         self.k2461.write('*wai')  # queue up following commands instead of activating them instantly
 
     # sets up and sends a single square wave pulse with duration "width" in second and amplitude "voltage" in Volts
-    def pulse_voltage(self, voltage, width=1e-3):
+    def pulse_voltage(self, voltage, width=1e-3, clim=75e-3):
         self.k2461.write('sens:volt:rsen off')  # measure 2 wire
         self.k2461.write(':form:asc:prec 16')  # data precision to 16esigner
         # set up pulse waveform
@@ -107,7 +107,7 @@ class K2461:
         # "<bufferName>", <delay>, <offTime>, <count>, <xBiasLimit>, <xPulseLimit>, <failAbort>, <dual>
         # page 6-110 in ref man
         self.k2461.write(
-            f'sour:puls:swe:volt:lin 0, 0, {voltage}, 2, {width}, off, "defbuffer1", 0, 0, 1, 75e-3, 75e-3, off, off')
+            f'sour:puls:swe:volt:lin 0, 0, {voltage}, 2, {width}, off, "defbuffer1", 0, 0, 1, {clim}, {clim}, off, off')
         self.k2461.write('init')  # send pulse
         self.k2461.write('*wai')  # queue up following commands instead of activating them instantly
 
