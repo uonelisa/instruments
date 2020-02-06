@@ -21,6 +21,7 @@ for i in range(len(measure_n)):
     end = time.time()
     t_measured[i] = max(t)
     t_recorded[i] = end - start
+    print(measure_n[i], end - start, max(t))
 
 
 data = np.column_stack((measure_n, t_measured, t_recorded))
@@ -30,6 +31,7 @@ print('data saved as loop_time_scaling.txt')
 plt.figure(1)
 plt.plot(measure_n, t_measured, 'k-')
 plt.plot(measure_n, t_recorded, 'r-')
+plt.show()
 
 
 
