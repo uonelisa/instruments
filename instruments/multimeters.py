@@ -54,7 +54,7 @@ class K2000:
 
     # sets up measurement for one single values. For use with a source meter to provide current and use
     # read_one to take readings
-    def measure_one(self, volt_range, nplc):
+    def measure_one(self, volt_range=0, nplc=2):
         self.k2000.write('sens:func "volt"')  # measure volts
         self.k2000.write(f'sens:volt:nplc {nplc}')  # level of averaging min, 0.01 -> 10 ish Power line cycle:
         # 50hz 2-> 25hz measurement
@@ -64,6 +64,10 @@ class K2000:
     def read_one(self):
         data = np.array([self.k2000.query_ascii_values('sens:data?')])
         return data[0][0]
+
+    # use this after setting up measure_one and then trigger instead of using read_one
+    def fetch_one(self):
+        return self.k2000.query_ascii_values('fetch?')[0]
 
     def close(self):
         self.k2000.close()

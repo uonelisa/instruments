@@ -130,6 +130,10 @@ class K2461:
         self.k2461.write('init')
         self.k2461.write('*wai')
 
+    def trigger_fetch(self):
+        self.k2461.write(':trac:trig "defbuffer1"')
+        self.k2461.write('*wai')
+
     # reads num data points from the buffer
     def read_buffer(self, num):
         self.k2461.write('outp off')
@@ -137,9 +141,9 @@ class K2461:
         try:
             data = np.array(self.k2461.query_ascii_values(f'trac:data? 1, {num}, "defBuffer1", sour, read, rel'))
             t = data[2::3]
-            d = data[1::3]
+            v = data[1::3]
             c = data[0::3]
-            return t, d ,c
+            return t, v, c
         except:
             print('could not read data from K2461')
             return np.array([]), np.array([])
@@ -180,6 +184,10 @@ class K2461:
         cur = data[0][0]
         vol = data[0][1]
         return cur, vol
+
+    def fetch_one(self):
+        data = self.k2461.query_ascii_values(':fetch? "defbuffer1", sour, read')
+        return data[0], data[1]
 
     # closes connections and allows for a new process to connect
     def close(self):
