@@ -10,6 +10,7 @@ pg.connect()
 pg.pulse_current(1e-3, 1e-3)
 time.sleep(5)
 
+# how to use buffer measurements
 pg.measure_n(100e-6, 50, 2)
 pg.trigger()
 time.sleep(10)
@@ -17,15 +18,20 @@ time, v, c = pg.read_buffer(50)
 plt.plot(time, v/c)
 plt.draw()
 
+# how to use 2 wire single measurements the easy way
 pg.enable_2_wire_probe(100e-6, 2)
 c, v = pg.read_one()
 print(v / c)
 pg.disable_probe_current()
+# how to use 4 wire single measurements the easy way
 pg.enable_4_wire_probe(100e-6, 2)
 c, v = pg.read_one()
 print(v / c)
 pg.disable_probe_current()
 
+# The best way to do 2/4 wire measurements if using multiple instruments.
+# Set up measurement settings and then trigger a single measurement on all instruments
+# then fetch the values and process them.
 pg.enable_4_wire_probe(100e-6)
 pg.trigger_fetch()
 c, v = pg.fetch_one()
