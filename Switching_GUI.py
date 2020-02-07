@@ -35,8 +35,8 @@ class DataCollector(QtCore.QObject):
     bb = instruments.BalanceBox()
     dmm = instruments.K2000()
     pg = instruments.K2461()
-    pulse1_assignments = {"I+": "C", "I-": "G"}  # configuration for a pulse from B to F
-    pulse2_assignments = {"I+": "G", "I-": "C"}  # configuration for a pulse from D to H
+    pulse1_assignments = {"I+": "B", "I-": "F"}  # configuration for a pulse from B to F
+    pulse2_assignments = {"I+": "D", "I-": "H"}  # configuration for a pulse from D to H
     measure_assignments = {"V1+": "C", "V1-": "G", "V2+": "B", "V2-": "D", "I+": "A", "I-": "E"}  # here V1 is Vxy
     resistance_assignments = {'A': 86, 'B': 64, 'C': 50, 'D': 58, 'E': 86, 'F': 64, 'G': 50, 'H': 58}
 

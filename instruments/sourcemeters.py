@@ -113,21 +113,28 @@ class K2461:
 
     # sets up a measurement of "num" points with applied probe current of "current" Amps
     def measure_n(self, current, num, nplc=2):
-        self.k2461.write('sour:func curr')
+        self.k2461.write('*rst')
+        self.k2461.write(f'trac:make "mybuffer", {num}')
         self.k2461.write('sour:curr:rang 200e-6')
+        self.k2461.write('sour:func curr')
         self.k2461.write(f'sour:curr {current}')
+        self.k2461.write('sour:curr:read:back on')
+
+        self.k2461.write('sens:func "volt"')
 
         # self.k2400.write('sour:curr:vlim 1')
         self.k2461.write('sens:volt:rsen on')
         self.k2461.write(f'sens:volt:nplc {nplc}')
         self.k2461.write('sens:volt:rang:auto on')
-
-        self.k2461.write(f'trig:load "SimpleLoop", {num}, 0, "defBuffer1"')
+        self.k2461.write(f'count {num}')
+        # self.k2461.write(f'trig:load "SimpleLoop", {num}, 0, "defBuffer1"')
+        # self.k2461.write(f'sens:count {num}')
         self.k2461.write('outp on')
 
     # initiates the measurement set up using measure
     def trigger(self):
-        self.k2461.write('init')
+        # self.k2461.write('init')
+        self.k2461.write(':trac:trig "mybuffer"')
         self.k2461.write('*wai')
 
     def trigger_fetch(self):
@@ -139,14 +146,14 @@ class K2461:
         self.k2461.write('outp off')
         # print(self.k2400.query('trac:act? "defBuffer1"'))
         try:
-            data = np.array(self.k2461.query_ascii_values(f'trac:data? 1, {num}, "defBuffer1", sour, read, rel'))
+            data = np.array(self.k2461.query_ascii_values(f'trac:data? 1, {num}, "mybuffer", sour, read, rel'))
             t = data[2::3]
             v = data[1::3]
             c = data[0::3]
             return t, v, c
         except:
             print('could not read data from K2461')
-            return np.array([]), np.array([])
+            return np.array([]), np.array([]), np.array([])
 
     # For use when reading one value from the source meter in 4 wire mode.
     # Applies current and measures voltage drop across device (Rxx)

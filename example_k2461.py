@@ -16,7 +16,6 @@ pg.trigger()
 time.sleep(10)
 time, v, c = pg.read_buffer(50)
 plt.plot(time, v/c)
-plt.draw()
 
 # how to use 2 wire single measurements the easy way
 pg.enable_2_wire_probe(100e-6, 2)
