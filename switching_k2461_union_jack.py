@@ -133,3 +133,6 @@ else:
     print('Data not saved')
 
 plt.show()
+
+
+#  todo: add code to show how to loop through N measurements using trigger

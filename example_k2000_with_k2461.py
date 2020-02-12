@@ -27,3 +27,5 @@ current, voltage = pg.read_one()  # measure a single value on K2461
 volt2 = dmm.read_one()  # measure a single value on K2000
 print(voltage / current, volt2 / current)
 pg.disable_probe_current()  # turn off the current
+
+#  todo: add code to show how to loop through N measurements using trigger

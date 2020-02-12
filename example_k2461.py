@@ -38,3 +38,6 @@ print(v/c)
 pg.disable_probe_current()
 
 plt.show()
+
+
+#  todo: add code to show how to loop through N measurements using trigger
