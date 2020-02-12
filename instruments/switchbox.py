@@ -28,6 +28,8 @@ class SwitchBox:
     # would connect a to V1+ and B to V1-.
     def switch(self, assignments):
         self.reset_all()
+        # find all outputs that are matching, sum their channel values and then move on to next output.
+        # this method only allows for one measurement from each pin
         for channel, output in assignments.items():
             self.sb.write(bytes.fromhex(self.start_byte + self.binary_dictionary[output] +
                                         self.binary_dictionary[channel] + self.stop_byte))

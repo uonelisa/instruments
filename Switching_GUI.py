@@ -35,10 +35,10 @@ class DataCollector(QtCore.QObject):
     bb = instruments.BalanceBox()
     dmm = instruments.K2000()
     pg = instruments.K2461()
-    pulse1_assignments = {"I+": "B", "I-": "F"}  # configuration for a pulse from B to F
-    pulse2_assignments = {"I+": "D", "I-": "H"}  # configuration for a pulse from D to H
-    measure_assignments = {"V1+": "C", "V1-": "G", "V2+": "B", "V2-": "D", "I+": "A", "I-": "E"}  # here V1 is Vxy
-    resistance_assignments = {'A': 86, 'B': 64, 'C': 50, 'D': 58, 'E': 86, 'F': 64, 'G': 50, 'H': 58}
+    pulse1_assignments = {"I+": "A", "I-": "F"}  # configuration for a pulse from B to F
+    pulse2_assignments = {"I+": "F", "I-": "A"}  # configuration for a pulse from D to H
+    measure_assignments = {"V1+": "D", "V1-": "G", "V2+": "C", "V2-": "D", "I+": "B", "I-": "E"}  # here V1 is Vxy
+    resistance_assignments = {'A': 0, 'B': 0, 'C': 0, 'D': 0, 'E': 0, 'F': 0, 'G': 0, 'H': 0}
 
     @QtCore.pyqtSlot(str, str, str, str, str, str, str, str, str)
     def start_measurement(self, mode, sb_port, bb_port, dmm_port, pulse_mag, pulse_width, meas_curr, meas_n, loop_n):
