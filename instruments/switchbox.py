@@ -14,8 +14,8 @@ class SwitchBox:
         self.stop_byte = 'C0'
         self.binary_dictionary = {"A": '00', "B": '01', "C": '02', "D": '03', "E": '04', "F": '05', "G": '06',
                                   "H": '07',
-                                  "V1+": '20', "V1-": '10', "V2+": '08', "V2-": '04', "I+": '02', "I-": '01', "0": '00',
-                                  "": '00'}
+                                  "V1+": 32, "V1-": 16, "V2+": 8, "V2-": 4, "I+": 2, "I-": 1, "0": 0,
+                                  "": 0}
 
     # connects to sb on given port with baud rate 57600
     def connect(self, port):
@@ -30,9 +30,15 @@ class SwitchBox:
         self.reset_all()
         # find all outputs that are matching, sum their channel values and then move on to next output.
         # this method only allows for one measurement from each pin
-        for channel, output in assignments.items():
-            self.sb.write(bytes.fromhex(self.start_byte + self.binary_dictionary[output] +
-                                        self.binary_dictionary[channel] + self.stop_byte))
+        for key, out_pin in assignments.items():
+            keys = [k for (k, v) in assignments.items() if v == out_pin]
+            in_pins = sum(self.binary_dictionary[pin] for pin in keys)
+            in_pin_hex = hex(in_pins)[2::].zfill(2)
+            self.sb.write(bytes.fromhex(self.start_byte + self.binary_dictionary[out_pin] +
+                                        in_pin_hex + self.stop_byte))
+        # for channel, output in assignments.items():
+        #     self.sb.write(bytes.fromhex(self.start_byte + self.binary_dictionary[output] +
+        #                                 self.binary_dictionary[channel] + self.stop_byte))
         self.refresh()
 
     def refresh(self):
