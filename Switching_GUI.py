@@ -76,29 +76,35 @@ class DataCollector(QtCore.QObject):
     def pulse_and_measure(self, volts, pulse_mag, pulse_width, meas_curr, meas_n, loop_n):
         # there is enough different between pos and neg pulses to keep these as "repeated code segments" IMO.
         start_time = time.time()
-        for i in range(loop_n):
+        for loop_count in range(loop_n):
             self.mutex.lock()
             if self.is_stopped:
                 break
             self.mutex.unlock()
+
             self.sb.switch(self.pulse1_assignments)
             time.sleep(200e-3)
-            pulse1_time = time.time()
             if volts:
                 self.pg.pulse_voltage(pulse_mag, pulse_width)
             else:
                 self.pg.pulse_current(pulse_mag, pulse_width)
             time.sleep(200e-3)
             self.sb.switch(self.measure_assignments)
-            self.pg.measure_n(meas_curr, meas_n)
-            self.dmm.measure_n(meas_n)
+            self.pg.enable_4_wire_probe(meas_curr)
+            self.dmm.measure_one()
             time.sleep(200e-3)
-            self.dmm.trigger()
-            self.pg.trigger()
-            time.sleep(meas_n * 0.165)
-            t, vxx, curr = self.pg.read_buffer(meas_n)
-            vxy = self.dmm.read_buffer()
-            self.pos_data_ready.emit(t + pulse1_time - start_time, vxx / curr, vxy / curr)
+            t = np.zeros(meas_n)
+            vxx = np.zeros(meas_n)
+            vxy = np.zeros(meas_n)
+            curr = np.zeros(meas_n)
+            for meas_count in range(meas_n):
+                t[meas_count] = time.time()
+                self.dmm.trigger()
+                self.pg.trigger_fetch()
+                vxx[meas_count], curr[meas_count] = self.pg.fetch_one()
+                vxy[meas_count] = self.dmm.fetch_one()
+            self.pg.disable_probe_current()
+            self.pos_data_ready.emit(t - start_time, vxx / curr, vxy / curr)
 
             self.mutex.lock()
             if self.is_stopped:
@@ -106,22 +112,27 @@ class DataCollector(QtCore.QObject):
             self.mutex.unlock()
             self.sb.switch(self.pulse2_assignments)
             time.sleep(200e-3)
-            pulse2_time = time.time()
             if volts:
                 self.pg.pulse_voltage(pulse_mag, pulse_width)
             else:
                 self.pg.pulse_current(pulse_mag, pulse_width)
             time.sleep(200e-3)
             self.sb.switch(self.measure_assignments)
-            self.pg.measure_n(meas_curr, meas_n)
-            self.dmm.measure_n(meas_n)
+            self.pg.enable_4_wire_probe(meas_curr)
+            self.dmm.measure_one()
             time.sleep(200e-3)
-            self.dmm.trigger()
-            self.pg.trigger()
-            time.sleep(meas_n * 0.165)
-            t, vxx, curr = self.pg.read_buffer(meas_n)
-            vxy = self.dmm.read_buffer()
-            self.neg_data_ready.emit(t + pulse2_time - start_time, vxx / curr, vxy / curr)
+            t = np.zeros(meas_n)
+            curr = np.zeros(meas_n)
+            vxx = np.zeros(meas_n)
+            vxy = np.zeros(meas_n)
+            for meas_count in range(meas_n):
+                t[meas_count] = time.time()
+                self.dmm.trigger()
+                self.pg.trigger_fetch()
+                vxx[meas_count], curr[meas_count] = self.pg.fetch_one()
+                vxy[meas_count] = self.dmm.fetch_one()
+            self.pg.disable_probe_current()
+            self.neg_data_ready.emit(t - start_time, vxx / curr, vxy / curr)
 
     def handle_inputs(self, sb_port, bb_port, dmm_port, pulse_mag, pulse_width, meas_curr, meas_n, loop_n):
         connection_flag = False

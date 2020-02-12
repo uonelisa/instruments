@@ -158,26 +158,26 @@ class K2461:
     # For use when reading one value from the source meter in 4 wire mode.
     # Applies current and measures voltage drop across device (Rxx)
     def enable_4_wire_probe(self, current, nplc=2):
-        self.k2461.write('sour:func curr')
-        self.k2461.write(f'sour:curr {current}')
-        self.k2461.write('sour:curr:vlim 2')
         self.k2461.write('sens:func "volt"')
         self.k2461.write('sens:volt:rang:auto on')
         self.k2461.write('sens:volt:rsen on')
         self.k2461.write(f'sens:volt:nplc {nplc}')
+        self.k2461.write('sour:func curr')
+        self.k2461.write(f'sour:curr {current}')
+        self.k2461.write('sour:curr:vlim 2')
         self.k2461.write('outp on')
 
     # For use when reading one value from Source meter at a time in 2 wire mode.
     # Applies current and measures voltage required to apply that current
     # nplc: 0.02, 0.2, 1, 10, 100, 200. 0.2 is "fast".
     def enable_2_wire_probe(self, current, nplc=2):
-        self.k2461.write('sour:func curr')
-        self.k2461.write(f'sour:curr {current}')
-        self.k2461.write('sour:curr:vlim 2')
         self.k2461.write('sens:func "volt"')
         self.k2461.write('sens:volt:rang:auto on')
         self.k2461.write('sens:volt:rsen off')
         self.k2461.write(f'sens:volt:nplc {nplc}')
+        self.k2461.write('sour:func curr')
+        self.k2461.write(f'sour:curr {current}')
+        self.k2461.write('sour:curr:vlim 2')
         self.k2461.write('outp on')
 
     # Use after measuring with probe current to disable output
@@ -194,7 +194,7 @@ class K2461:
 
     def fetch_one(self):
         data = self.k2461.query_ascii_values(':fetch? "defbuffer1", sour, read')
-        return data[0], data[1]
+        return data[1], data[0]
 
     # closes connections and allows for a new process to connect
     def close(self):
