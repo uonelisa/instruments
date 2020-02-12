@@ -100,7 +100,7 @@ class K2461:
 
     # sets up and sends a single square wave pulse with duration "width" in second and amplitude "voltage" in Volts
     def pulse_voltage(self, voltage, width=1e-3, clim=75e-3):
-        self.k2461.write('sens:volt:rsen off')  # measure 2 wire
+        self.k2461.write('sens:curr:rsen off')  # measure 2 wire
         self.k2461.write(':form:asc:prec 16')  # data precision to 16esigner
         # set up pulse waveform
         # :SOURce[1]:PULSe:SWEep:<function>:LINear <biasLevel>, <start>, <stop>, <points>, <pulseWidth>, <measEnable>,
