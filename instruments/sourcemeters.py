@@ -1,7 +1,81 @@
 import visa
 import numpy as np
 
-__all__ = ['K2401', 'K2461']
+__all__ = ['K2400', 'K2401', 'K2461']
+
+
+class K2400:
+    # Connects to K2401 using given port. Use 19200 baud rate (or 19.2K on screen)
+    def connect(self, port):
+        rm = visa.ResourceManager('@ni')
+        self.k2400 = rm.open_resource(f'COM{port}', baud_rate=19200)
+        self.k2400.close()
+        self.k2400.open()
+        self.k2400.baud_rate = 19200
+        self.k2400.timeout = 10000
+        self.k2400.write_termination = '\r\n'
+        self.k2400.read_termination = '\r\n'
+        self.k2400.write('*rst')
+        self.k2400.write('*cls')
+
+    # Sends a square pulse of 5ms duration and amplitude "current" Amps
+    def pulse_current(self, current):
+        self.k2400.write('*rst')
+        self.k2400.write(':SYSTEM:BEEP:STATE OFF')
+        self.k2400.write('trac:cle')
+        self.k2400.write('*cls')
+        self.k2400.write(':syst:rsen on')
+        self.k2400.write('trig:coun 1')
+        self.k2400.write('sour:func curr')
+        self.k2400.write('sens:func:conc off')
+        self.k2400.write('sens:volt:rang:auto on')
+        self.k2400.write('sens:volt:prot:lev 20')
+        self.k2400.write(f'sour:curr:lev {current}')
+        self.k2400.write('trig:del 0')
+        self.k2400.write('sour:del 0')
+        self.k2400.write('sour:cle:auto on')
+        self.k2400.write('init')
+        self.k2400.write('*wai')
+
+    # Sets up the parameters to measure data and store it in buffer
+    def measure_n(self, current, num, nplc=2):
+        self.k2400.write('*rst')
+        self.k2400.write('*cls')
+        self.k2400.write(':SYSTEM:BEEP:STATE OFF')
+        self.k2400.write('sour:func curr')
+        self.k2400.write(f'sour:curr {current}')
+        self.k2400.write('sour:curr:rang:auto on')
+        self.k2400.write('sens:volt:prot:lev 20')
+        self.k2400.write('sens:func "volt"')
+        self.k2400.write(f'sens:volt:nplc {nplc}')
+        self.k2400.write('sens:volt:rang:auto on')
+        self.k2400.write('syst:rsen on')
+        self.k2400.write('form:elem time, volt, curr')
+        self.k2400.write('trac:cle')  # clear buffer
+        self.k2400.write(f'trig:count {num}')  # number of p
+        self.k2400.write(f'trac:poin {num}')  # size of buff
+        self.k2400.write('trac:feed sens')  # what goes in b
+        self.k2400.write('trac:feed:cont next')  # doesn't o
+        self.k2400.write('trac:tst:form abs')
+        self.k2400.write('outp on')
+
+    # Initiates the measurement loop
+    def trigger(self):
+        self.k2400.write('init')
+        self.k2400.write('*wai')
+
+    # reads the results from the buffer
+    def read_buffer(self):
+        self.k2400.write('outp off')
+        data = np.array(self.k2400.query_ascii_values('trac:data?'))
+        t = data[2::3]
+        v = data[1::3]
+        c = data[0::3]
+        return t, v, c
+
+    def close(self):
+        self.k2400.write('outp off')
+        self.k2400.close()
 
 
 class K2401:
@@ -66,7 +140,10 @@ class K2401:
     def read_buffer(self):
         self.k2401.write('outp off')
         data = np.array(self.k2401.query_ascii_values('trac:data?'))
-        return data[2::3], data[0::3], data[1::3]
+        t = data[2::3]
+        v = data[1::3]
+        c = data[0::3]
+        return t, v, c
 
     def close(self):
         self.k2401.write('outp off')
