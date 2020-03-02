@@ -1,7 +1,9 @@
 import visa
 import numpy as np
 
-__all__ = ['K2400', 'K2401', 'K2461']
+__all__ = ['K2400', 'K2401', 'K2461', 'K2661']
+
+
 
 
 class K2400:
@@ -17,6 +19,7 @@ class K2400:
         self.k2400.read_termination = '\r\n'
         self.k2400.write('*rst')
         self.k2400.write('*cls')
+        print('connected to: ', self.k2400.query('*IDN?'))
 
     # Sends a square pulse of 5ms duration and amplitude "current" Amps
     def pulse_current(self, current):
@@ -91,6 +94,7 @@ class K2401:
         self.k2401.read_termination = '\r\n'
         self.k2401.write('*rst')
         self.k2401.write('*cls')
+        print('connected to: ', self.k2401.query('*IDN?'))
 
     # Sends a square pulse of 5ms duration and amplitude "current" Amps
     def pulse_current(self, current):
@@ -279,3 +283,43 @@ class K2461:
         self.k2461.write('*sre 0')
         self.k2461.write('outp off')
         self.k2461.close()
+
+
+class K2661:
+    def connect(self, port):
+        rm = visa.ResourceManager('@ni')
+        self.k2661 = rm.open_resource(f'COM{port}', baud_rate=19200)
+        self.k2661.close()
+        self.k2661.open()
+        self.k2661.baud_rate = 19200
+        self.k2661.timeout = 10000
+        self.k2661.write_termination = '\r\n'
+        self.k2661.read_termination = '\r\n'
+        self.k2661.write('*rst')
+        self.k2661.write('*cls')
+        print('connected to: ', self.k2661.query('*IDN?'))
+
+    def sine_wave(self,  hz, ma, duty=50):
+        self.k2661.write('*RST')
+        self.k2661.write('SOUR:WAVE:FUNC SIN')
+        self.k2661.write(f'SOUR:WAVE:FREQ {hz}')
+        self.k2661.write(f'SOUR:WAVE:AMPL {ma*1e-3}')
+        self.k2661.write('SOUR:WAVE:ARM')
+
+    # Current in mA and Freq in Hz duty in %
+    def square_wave(self, hz, ma, duty=50):
+        self.k2661.write('*RST')
+        self.k2661.write('SOUR:WAVE:FUNC SQU')
+        self.k2661.write(f'SOUR:WAVE:FREQ {hz}')
+        self.k2661.write(f'SOUR:WAVE:AMPL {ma*1e-3}')
+        self.k2661.write(f'SOUR:WAVE:DCYC {duty}')
+        self.k2661.write('SOUR:WAVE:ARM')
+
+    def wave_output_on(self):
+        self.k2661.write('SOUR:WAVE:INIT')
+
+    def wave_output_off(self):
+        self.k2661.write('SOUR:WAVE:ABOR')
+
+    def close(self):
+        self.k2661.close()
