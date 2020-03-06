@@ -162,6 +162,8 @@ class Model_5210:
         except:
             print(f'Invalid time constant: {tc}. Must be 1ex or 3ex where -3<=x<=3')
 
+    # TODO: Add a method to query mode and to switch between 2theta and 1theta mode
+
     def set_sensitivity(self, sens):
         try:
             self.write_chars(f'SEN {self.sensitivities.index(sens)}')

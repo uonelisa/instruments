@@ -71,4 +71,30 @@ class TEC1089SV:
         return self.tec.query(msg + crc)[7:-4]
 
 
+    # TODO:
+    # change the display mode on connect:
+    #  Curr: TTC  Targ: TTC
+    #  V:volts V  A: amps A
+    # Also change the V and A limits on boot 2030, 2031, 2032, 2033, are Clim Vlim Cerr Verr
+    # Configure PT100
+    # To read a value:
+    # #0015AC?VR<ID>01<checksum>
+    # To write a value:
+    # #0015AE?VS<ID>01<newvalue><checksum>
+    # The 01 is the channel to set it to. Only one channel so always 01.
+    #
+    # Start auto tuning
+    # add set/get target temp ID 3000
+    # add set/get P, I and D and damping 3010, 3011, 3012, 3013
+    # add function to wait until temperature is stable (ID 1200)
+    # Get object current temp 1000. 1045 is ssame but different?
+    # Get sink temp: 1001
+    # Read all errors 105, 106, 107?
+    # Get actual output current 1090?
+    # Get actual Output A or V 1020 or 1021
+    # Emergency stop: ES
+
+    # Input selection 0 static CV, 1 live CV, 2 Temp controller
+    # Start/stop output 2010, 0 off, 1 on, 2 live off/on, 3 HW enable?
+
 
