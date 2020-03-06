@@ -22,8 +22,7 @@ class K2000:
         self.k2000.read_termination = '\r\n'
         self.k2000.write('*rst')
         self.k2000.write('*cls')
-
-        print(self.k2000.query('*IDN?'))
+        print('connected to: ', self.k2000.query('*IDN?'))
 
     # Initiates the measurement set up in measure_n
     def trigger(self):
