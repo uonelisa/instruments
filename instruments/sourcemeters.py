@@ -1,7 +1,84 @@
 import visa
 import numpy as np
 
-__all__ = ['K2401', 'K2461']
+__all__ = ['K2400', 'K2401', 'K2461', 'K2661']
+
+
+
+
+class K2400:
+    # Connects to K2401 using given port. Use 19200 baud rate (or 19.2K on screen)
+    def connect(self, port):
+        rm = visa.ResourceManager('@ni')
+        self.k2400 = rm.open_resource(f'COM{port}', baud_rate=19200)
+        self.k2400.close()
+        self.k2400.open()
+        self.k2400.baud_rate = 19200
+        self.k2400.timeout = 10000
+        self.k2400.write_termination = '\r\n'
+        self.k2400.read_termination = '\r\n'
+        self.k2400.write('*rst')
+        self.k2400.write('*cls')
+        print('connected to: ', self.k2400.query('*IDN?'))
+
+    # Sends a square pulse of 5ms duration and amplitude "current" Amps
+    def pulse_current(self, current):
+        self.k2400.write('*rst')
+        self.k2400.write(':SYSTEM:BEEP:STATE OFF')
+        self.k2400.write('trac:cle')
+        self.k2400.write('*cls')
+        self.k2400.write(':syst:rsen on')
+        self.k2400.write('trig:coun 1')
+        self.k2400.write('sour:func curr')
+        self.k2400.write('sens:func:conc off')
+        self.k2400.write('sens:volt:rang:auto on')
+        self.k2400.write('sens:volt:prot:lev 20')
+        self.k2400.write(f'sour:curr:lev {current}')
+        self.k2400.write('trig:del 0')
+        self.k2400.write('sour:del 0')
+        self.k2400.write('sour:cle:auto on')
+        self.k2400.write('init')
+        self.k2400.write('*wai')
+
+    # Sets up the parameters to measure data and store it in buffer
+    def measure_n(self, current, num, nplc=2):
+        self.k2400.write('*rst')
+        self.k2400.write('*cls')
+        self.k2400.write(':SYSTEM:BEEP:STATE OFF')
+        self.k2400.write('sour:func curr')
+        self.k2400.write(f'sour:curr {current}')
+        self.k2400.write('sour:curr:rang:auto on')
+        self.k2400.write('sens:volt:prot:lev 20')
+        self.k2400.write('sens:func "volt"')
+        self.k2400.write(f'sens:volt:nplc {nplc}')
+        self.k2400.write('sens:volt:rang:auto on')
+        self.k2400.write('syst:rsen on')
+        self.k2400.write('form:elem time, volt, curr')
+        self.k2400.write('trac:cle')  # clear buffer
+        self.k2400.write(f'trig:count {num}')  # number of p
+        self.k2400.write(f'trac:poin {num}')  # size of buff
+        self.k2400.write('trac:feed sens')  # what goes in b
+        self.k2400.write('trac:feed:cont next')  # doesn't o
+        self.k2400.write('trac:tst:form abs')
+        self.k2400.write('outp on')
+
+    # Initiates the measurement loop
+    def trigger(self):
+        self.k2400.write('init')
+        self.k2400.write('*wai')
+
+    # reads the results from the buffer
+    def read_buffer(self):
+        self.k2400.write('outp off')
+        data = np.array(self.k2400.query_ascii_values('trac:data?'))
+        t = data[2::3]
+        v = data[1::3]
+        c = data[0::3]
+        return t, v, c
+
+    def close(self):
+        self.k2400.write('outp off')
+        self.k2400.close()
 
 
 class K2401:
@@ -17,6 +94,7 @@ class K2401:
         self.k2401.read_termination = '\r\n'
         self.k2401.write('*rst')
         self.k2401.write('*cls')
+        print('connected to: ', self.k2401.query('*IDN?'))
 
     # Sends a square pulse of 5ms duration and amplitude "current" Amps
     def pulse_current(self, current):
@@ -66,7 +144,10 @@ class K2401:
     def read_buffer(self):
         self.k2401.write('outp off')
         data = np.array(self.k2401.query_ascii_values('trac:data?'))
-        return data[2::3], data[0::3], data[1::3]
+        t = data[2::3]
+        v = data[1::3]
+        c = data[0::3]
+        return t, v, c
 
     def close(self):
         self.k2401.write('outp off')
@@ -100,7 +181,7 @@ class K2461:
 
     # sets up and sends a single square wave pulse with duration "width" in second and amplitude "voltage" in Volts
     def pulse_voltage(self, voltage, width=1e-3, clim=75e-3):
-        self.k2461.write('sens:volt:rsen off')  # measure 2 wire
+        self.k2461.write('sens:curr:rsen off')  # measure 2 wire
         self.k2461.write(':form:asc:prec 16')  # data precision to 16esigner
         # set up pulse waveform
         # :SOURce[1]:PULSe:SWEep:<function>:LINear <biasLevel>, <start>, <stop>, <points>, <pulseWidth>, <measEnable>,
@@ -202,3 +283,43 @@ class K2461:
         self.k2461.write('*sre 0')
         self.k2461.write('outp off')
         self.k2461.close()
+
+
+class K2661:
+    def connect(self, port):
+        rm = visa.ResourceManager('@ni')
+        self.k2661 = rm.open_resource(f'COM{port}', baud_rate=19200)
+        self.k2661.close()
+        self.k2661.open()
+        self.k2661.baud_rate = 19200
+        self.k2661.timeout = 10000
+        self.k2661.write_termination = '\r\n'
+        self.k2661.read_termination = '\r\n'
+        self.k2661.write('*rst')
+        self.k2661.write('*cls')
+        print('connected to: ', self.k2661.query('*IDN?'))
+
+    def sine_wave(self,  hz, ma, duty=50):
+        self.k2661.write('*RST')
+        self.k2661.write('SOUR:WAVE:FUNC SIN')
+        self.k2661.write(f'SOUR:WAVE:FREQ {hz}')
+        self.k2661.write(f'SOUR:WAVE:AMPL {ma*1e-3}')
+        self.k2661.write('SOUR:WAVE:ARM')
+
+    # Current in mA and Freq in Hz duty in %
+    def square_wave(self, hz, ma, duty=50):
+        self.k2661.write('*RST')
+        self.k2661.write('SOUR:WAVE:FUNC SQU')
+        self.k2661.write(f'SOUR:WAVE:FREQ {hz}')
+        self.k2661.write(f'SOUR:WAVE:AMPL {ma*1e-3}')
+        self.k2661.write(f'SOUR:WAVE:DCYC {duty}')
+        self.k2661.write('SOUR:WAVE:ARM')
+
+    def wave_output_on(self):
+        self.k2661.write('SOUR:WAVE:INIT')
+
+    def wave_output_off(self):
+        self.k2661.write('SOUR:WAVE:ABOR')
+
+    def close(self):
+        self.k2661.close()

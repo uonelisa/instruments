@@ -1,7 +1,8 @@
 import visa
 import numpy as np
+import time
 
-__all__ = ['Prologix', 'SR830']
+__all__ = ['Prologix', 'SR830', 'Model_5210']
 
 
 class Prologix:
@@ -57,7 +58,7 @@ class SR830:
     # another lockin can use the same port with a different address.
     def connect(self, port, address):
         self.lockin = Prologix(port, address)
-        print(self.lockin.query('*IDN?'))
+        print('connected to: ', self.lockin.query('*IDN?'))
         self.lockin.write('OVRM 1')
 
     #  This is more complicated because it does not have an internal clock or way to set the measurement number so just
@@ -113,7 +114,6 @@ class SR830:
     # Set the phase of the reference signal
     # must be float in degrees. will be wrapped and rounded automatically
     def set_phase(self, phi):
-
         self.lockin.write(f'PHAS {phi}')
 
     # Set the measurement voltage range
@@ -136,3 +136,74 @@ class SR830:
             self.lockin.write(f'SRAT {self.sample_rates.index(srate)}s')
         except ValueError:
             print('Not valid sample rate')
+
+
+class Model_5210:
+    def __init__(self):
+        self.time_constants = [1e-3, 3e-3, 1e-2, 3e-2, 1e-1, 3e-1, 1, 3, 1e1, 3e1, 1e2, 3e2, 1e3, 3e3]
+        self.sensitivities = [1e-9, 3e-9, 1e-8, 3e-8, 1e-7, 3e-7, 1e-6, 3e-6, 1e-5, 3e-5, 1e-4, 3e-4, 1e-3, 3e-3, 1e-2,
+                              3e-2, 1e-1, 3e-1, 1, 3]
+        self.sample_rates = [6.25e-2, 1.25e-1, 2.5e-1, 5e-1, 1, 2, 4, 8, 16, 32, 64, 128, 256, 512, 'trigger']
+
+    def connect(self, port):
+        rm = visa.ResourceManager('@ni')
+        self.lockin = rm.open_resource(f'COM{port}', baud_rate=19200)
+        self.lockin.close()
+        self.lockin.open()
+        self.lockin.baud_rate = 19200
+        self.lockin.timeout = 10000
+        self.lockin.write_termination = ''
+        self.lockin.read_termination = '\r\n'
+        print('Model ', self.query_chars('ID'))
+
+    def set_time_constant(self, tc):
+        try:
+            self.write_chars(f'TC {self.time_constants.index(tc)}')
+        except:
+            print(f'Invalid time constant: {tc}. Must be 1ex or 3ex where -3<=x<=3')
+
+    def set_sensitivity(self, sens):
+        try:
+            self.write_chars(f'SEN {self.sensitivities.index(sens)}')
+        except:
+            print(f'Invalid sensitivity: {sens}. Must be 1ex or 3ex where -9<=x<=0')
+
+    def get_sensitivity(self):
+        try:
+            idx = self.query_chars('SEN')
+            return float(self.sensitivities[int(idx)])
+        except:
+            print('Could not get sensitivity.')
+
+    def get_time_constant(self):
+        try:
+            idx = self.query_chars('TC')
+            return float(self.time_constants[int(idx)])
+        except:
+            print('Could not get time constant')
+
+    def auto_phase(self):
+        self.write_chars('AQN')
+
+    def get_xy(self, sep=','):
+        return np.array(self.query_chars('XY').split(sep), dtype=float)
+
+    def get_x_rapid(self):
+        self.lockin.write('*')
+        return float(self.lockin.read('\r'))
+
+    def close(self):
+        self.lockin.close()
+
+    def write_chars(self, msg):
+        msg = msg + '\r\n'
+        for char in msg:
+            self.lockin.write(str(char))
+            time.sleep(0.1)
+
+    def query_chars(self, msg, separator=','):
+        msg = msg + '\r\n'
+        for char in msg:
+            self.lockin.write(str(char))
+            time.sleep(0.1)
+        return self.lockin.read()
