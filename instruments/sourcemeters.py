@@ -1,5 +1,6 @@
 import visa
 import numpy as np
+import time
 
 __all__ = ['K2400', 'K2401', 'K2461', 'K2661']
 
@@ -189,6 +190,7 @@ class K2461:
         # page 6-110 in ref man
         self.k2461.write(
             f'sour:puls:swe:volt:lin 0, 0, {voltage}, 2, {width}, off, "defbuffer1", 0, 0, 1, {clim}, {clim}, off, off')
+        time.sleep(0.05)
         self.k2461.write('init')  # send pulse
         self.k2461.write('*wai')  # queue up following commands instead of activating them instantly
 
