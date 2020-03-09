@@ -35,26 +35,24 @@ class DataCollector(QtCore.QObject):
     bb = instruments.BalanceBox()
     dmm = instruments.K2000()
     pg = instruments.K2461()
-    pulse1_assignments = {"I+": "A", "I-": "F"}  # configuration for a pulse from B to F
-    pulse2_assignments = {"I+": "F", "I-": "A"}  # configuration for a pulse from D to H
-    measure_assignments = {"V1+": "D", "V1-": "G", "V2+": "C", "V2-": "D", "I+": "B", "I-": "E"}  # here V1 is Vxy
+    pulse1_assignments = {"I+": "D", "I-": "H"}  # configuration for a pulse from B to F
+    pulse2_assignments = {"I+": "B", "I-": "F"}  # configuration for a pulse from D to H
+    measure_assignments = {"V1+": "B", "V1-": "D", "V2+": "C", "V2-": "G", "I+": "A", "I-": "E"}  # here V1 is Vxy
     resistance_assignments = {'A': 0, 'B': 0, 'C': 0, 'D': 0, 'E': 0, 'F': 0, 'G': 0, 'H': 0}
 
-    @QtCore.pyqtSlot(str, str, str, str, str, str, str, str, str)
-    def start_measurement(self, mode, sb_port, bb_port, dmm_port, pulse_mag, pulse_width, meas_curr, meas_n, loop_n):
+    @QtCore.pyqtSlot(str, str, str, str, str, str, str, str, str, bool)
+    def start_measurement(self, mode, sb_port, bb_port, dmm_port, pulse_mag, pulse_width, meas_curr, meas_n, loop_n,
+                          bb_enabled):
 
         self.mutex.lock()
         self.is_stopped = False
         self.mutex.unlock()
 
         error_flag, pulse_mag, pulse_width, meas_curr, meas_n, loop_n = self.handle_inputs(
-            sb_port, bb_port, dmm_port, pulse_mag, pulse_width, meas_curr, meas_n, loop_n)
+            sb_port, bb_port, dmm_port, pulse_mag, pulse_width, meas_curr, meas_n, loop_n, bb_enabled)
         # If flag is true then something failed in parsing the inputs or connecting and the loop will not continue.
         if error_flag:
             return
-
-        self.bb.enable_all()
-        self.bb.set_resistances(self.resistance_assignments)
 
         if mode == "Pulse Current":
             self.pulse_and_measure(False, pulse_mag * 1e-3, pulse_width * 1e-3, meas_curr * 1e-6,
@@ -67,7 +65,8 @@ class DataCollector(QtCore.QObject):
             print("Error with pulsing method selection")
             sys.exit(1)
         self.sb.close()
-        self.bb.close()
+        if bb_enabled:
+            self.bb.close()
         self.dmm.close()
         self.pg.close()
         # plt.pause()(1)
@@ -83,12 +82,12 @@ class DataCollector(QtCore.QObject):
             self.mutex.unlock()
 
             self.sb.switch(self.pulse1_assignments)
-            time.sleep(200e-3)
+            time.sleep(300e-3)
             if volts:
                 self.pg.pulse_voltage(pulse_mag, pulse_width)
             else:
                 self.pg.pulse_current(pulse_mag, pulse_width)
-            time.sleep(200e-3)
+            time.sleep(300e-3)
             self.sb.switch(self.measure_assignments)
             self.pg.enable_4_wire_probe(meas_curr)
             self.dmm.measure_one()
@@ -97,10 +96,14 @@ class DataCollector(QtCore.QObject):
             vxx = np.zeros(meas_n)
             vxy = np.zeros(meas_n)
             curr = np.zeros(meas_n)
+            # weird bug where first value is higher by some small amount so this ignores first and measures again.
+            if loop_count == 1:
+                self.pg.trigger_fetch()
+                self.pg.fetch_one()
             for meas_count in range(meas_n):
                 t[meas_count] = time.time()
-                self.dmm.trigger()
                 self.pg.trigger_fetch()
+                self.dmm.trigger()
                 vxx[meas_count], curr[meas_count] = self.pg.fetch_one()
                 vxy[meas_count] = self.dmm.fetch_one()
             self.pg.disable_probe_current()
@@ -110,8 +113,9 @@ class DataCollector(QtCore.QObject):
             if self.is_stopped:
                 break
             self.mutex.unlock()
+
             self.sb.switch(self.pulse2_assignments)
-            time.sleep(200e-3)
+            time.sleep(300e-3)
             if volts:
                 self.pg.pulse_voltage(pulse_mag, pulse_width)
             else:
@@ -119,7 +123,7 @@ class DataCollector(QtCore.QObject):
             time.sleep(200e-3)
             self.sb.switch(self.measure_assignments)
             self.pg.enable_4_wire_probe(meas_curr)
-            self.dmm.measure_one()
+            # self.dmm.measure_one()
             time.sleep(200e-3)
             t = np.zeros(meas_n)
             curr = np.zeros(meas_n)
@@ -127,14 +131,14 @@ class DataCollector(QtCore.QObject):
             vxy = np.zeros(meas_n)
             for meas_count in range(meas_n):
                 t[meas_count] = time.time()
-                self.dmm.trigger()
                 self.pg.trigger_fetch()
+                self.dmm.trigger()
                 vxx[meas_count], curr[meas_count] = self.pg.fetch_one()
                 vxy[meas_count] = self.dmm.fetch_one()
             self.pg.disable_probe_current()
             self.neg_data_ready.emit(t - start_time, vxx / curr, vxy / curr)
 
-    def handle_inputs(self, sb_port, bb_port, dmm_port, pulse_mag, pulse_width, meas_curr, meas_n, loop_n):
+    def handle_inputs(self, sb_port, bb_port, dmm_port, pulse_mag, pulse_width, meas_curr, meas_n, loop_n, bb_enabled):
         connection_flag = False
         conversion_flag = False
 
@@ -145,12 +149,15 @@ class DataCollector(QtCore.QObject):
             print('Invalid switchbox port please enter integer value.')
             conversion_flag = True
 
-        try:
-            bb_port = int(bb_port)
-        except ValueError:
-            error_sound()
-            print('Invalid balance box port please enter integer value.')
-            conversion_flag = True
+        if bb_enabled:
+            try:
+                bb_port = int(bb_port)
+            except ValueError:
+                error_sound()
+                print('Invalid balance box port please enter integer value.')
+                conversion_flag = True
+            self.bb.enable_all()
+            self.bb.set_resistances(self.resistance_assignments)
 
         try:
             dmm_port = int(dmm_port)
@@ -201,12 +208,13 @@ class DataCollector(QtCore.QObject):
             print(f"Could not connect to switch box on port COM{sb_port}.")
             connection_flag = True
 
-        try:
-            self.bb.connect(bb_port)
-        except serial.SerialException:
-            error_sound()
-            print(f"Could not connect to balance box on port COM{bb_port}.")
-            connection_flag = True
+        if bb_enabled:
+            try:
+                self.bb.connect(bb_port)
+            except serial.SerialException:
+                error_sound()
+                print(f"Could not connect to balance box on port COM{bb_port}.")
+                connection_flag = True
 
         try:
             self.dmm.connect(dmm_port)
@@ -264,7 +272,8 @@ class MyGUI(QtWidgets.QMainWindow):
                                         QtCore.Q_ARG(str, self.pulse_width_box.text()),
                                         QtCore.Q_ARG(str, self.probe_current_box.text()),
                                         QtCore.Q_ARG(str, self.measurement_count_box.text()),
-                                        QtCore.Q_ARG(str, self.loop_count_box.text())
+                                        QtCore.Q_ARG(str, self.loop_count_box.text()),
+                                        QtCore.Q_ARG(bool, self.bb_enable_checkbox.isChecked())
                                         )
 
     def create_plots(self):
