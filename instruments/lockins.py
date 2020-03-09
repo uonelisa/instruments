@@ -162,7 +162,15 @@ class Model_5210:
         except:
             print(f'Invalid time constant: {tc}. Must be 1ex or 3ex where -3<=x<=3')
 
-    # TODO: Add a method to query mode and to switch between 2theta and 1theta mode
+    def set_to_first_harmonic(self):
+        self.write_chars('IE 0')
+        time.sleep(0.1)
+        self.write_chars('F2F 0')
+
+    def set_to_second_harmonic(self):
+        self.write_chars('IE 0')
+        time.sleep(0.1)
+        self.write_chars('F2F 1')
 
     def set_sensitivity(self, sens):
         try:
