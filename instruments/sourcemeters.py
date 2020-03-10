@@ -170,8 +170,14 @@ class K2461:
         self.k2461.write('sens:volt:rang:auto on')
         # self.k2461.write(f'trac:make "defbuffer1", {10000}')
 
-    def prepare_pulsing(self):
-        self.k2461.write('')
+    def prepare_pulsing(self, current, nplc=2):
+        self.k2461.write('sens:func "volt"')
+        self.k2461.write('sens:volt:rang:auto on')
+        self.k2461.write('sens:volt:rsen on')
+        self.k2461.write(f'sens:volt:nplc {nplc}')
+        self.k2461.write('sour:func curr')
+        self.k2461.write(f'sour:curr {current}')
+        self.k2461.write('sour:curr:vlim 2')
 
     # sets up and sends a single square wave pulse with duration "width" in seconds and amplitude "current" in Amps
     def pulse_current(self, current, width=1e-3, vlim=30):
@@ -276,7 +282,7 @@ class K2461:
     # For use with "enable_2_wire_probe" or "enable_4_wire_probe" to read individual values
     def read_one(self):
         data = np.array([self.k2461.query_ascii_values(':READ? "defbuffer1", sour, read')])
-        print(data)
+        # print(data)
         cur = data[0][0]
         vol = data[0][1]
         return cur, vol
