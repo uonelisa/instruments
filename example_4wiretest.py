@@ -3,94 +3,87 @@ import time
 
 sb = instruments.SwitchBox()
 pg = instruments.K2461()
-bb = instruments.BalanceBox()
 sb.connect(4)
 pg.connect()
-bb.connect(5)
-bb.enable_all()
-bb.reset_resistances()
 
-vert1_ass = {"I+": "B", "I-": "F", "V2+": "A", "V2-": "G"}
-vert2_ass = {"I+": "D", "I-": "H", "V2+": "C", "V2-": "A"}
-# vert3_ass = {"I+": "D", "I-": "B", "V2+": "H", "V2-": "F"}
-# vert4_ass = {"I+": "H", "I-": "F", "V2+": "D", "V2-": "B"}
-# hor1_ass = {"I+": "B", "I-": "H", "V2+": "F", "V2-": "D"}
-# hor2_ass = {"I+": "F", "I-": "D", "V2+": "B", "V2-": "H"}
-# hor3_ass = {"I+": "H", "I-": "B", "V2+": "D", "V2-": "F"}
-# hor4_ass = {"I+": "D", "I-": "F", "V2+": "H", "V2-": "B"}
+# bb = instruments.BalanceBox()
+# bb.connect(5)
+# bb.enable_all()
+# bb.reset_resistances()
 
-sb.switch(vert1_ass)
+ass1 = {"I+": "A", "I-": "E", "V1+": "B", "V1-": "D"}
+ass2 = {"I+": "B", "I-": "F", "V1+": "C", "V1-": "E"}
+ass3 = {"I+": "C", "I-": "G", "V1+": "D", "V1-": "F"}
+ass4 = {"I+": "D", "I-": "H", "V1+": "E", "V1-": "G"}
+ass5 = {"I+": "E", "I-": "A", "V1+": "F", "V1-": "H"}
+ass6 = {"I+": "F", "I-": "B", "V1+": "G", "V1-": "A"}
+ass7 = {"I+": "G", "I-": "C", "V1+": "H", "V1-": "B"}
+ass8 = {"I+": "H", "I-": "D", "V1+": "A", "V1-": "C"}
+
+R = [0, 0, 0, 0, 0, 0, 0, 0]
+
+sb.switch(ass1)
 time.sleep(1)
 pg.enable_4_wire_probe(1e-3)
 time.sleep(1)
 c, v = pg.read_one()
-Rver1 = v / c
+R[0] = v / c
 pg.disable_probe_current()
-print(f'Vert1: {Rver1}')
 
-sb.switch(vert2_ass)
+sb.switch(ass2)
 time.sleep(1)
 pg.enable_4_wire_probe(1e-3)
 time.sleep(1)
 c, v = pg.read_one()
-Rver2 = v / c
+R[1] = v / c
 pg.disable_probe_current()
-print(f'Vert2: {Rver2}')
-#
-# sb.switch(vert3_ass)
-# time.sleep(1)
-# pg.enable_4_wire_probe(1e-3)
-# time.sleep(1)
-# c, v = pg.read_one()
-# Rver3 = v / c
-# pg.disable_probe_current()
-# print(f'Vert3: {Rver3}')
-#
-# sb.switch(vert4_ass)
-# time.sleep(1)
-# pg.enable_4_wire_probe(1e-3)
-# time.sleep(1)
-# c, v = pg.read_one()
-# Rver4 = v / c
-# pg.disable_probe_current()
-# print(f'Vert4: {Rver4}')
-#
-# sb.switch(hor1_ass)
-# time.sleep(1)
-# pg.enable_4_wire_probe(1e-3)
-# time.sleep(1)
-# c, v = pg.read_one()
-# Rhor1 = v / c
-# print(f'Vhor1: {Rhor1}')
-# pg.disable_probe_current()
-#
-# sb.switch(hor2_ass)
-# time.sleep(1)
-# pg.enable_4_wire_probe(1e-3)
-# time.sleep(1)
-# c, v = pg.read_one()
-# Rhor2 = v / c
-# print(f'Vhor2: {Rhor2}')
-# pg.disable_probe_current()
-#
-# sb.switch(hor3_ass)
-# time.sleep(1)
-# pg.enable_4_wire_probe(1e-3)
-# time.sleep(1)
-# c, v = pg.read_one()
-# Rhor3 = v / c
-# print(f'Vhor3: {Rhor3}')
-# pg.disable_probe_current()
-#
-# sb.switch(hor4_ass)
-# time.sleep(1)
-# pg.enable_4_wire_probe(1e-3)
-# time.sleep(1)
-# c, v = pg.read_one()
-# Rhor4 = v / c
-# print(f'Vhor4: {Rhor4}')
-# pg.disable_probe_current()
 
-# Rvertical = (Rver1 + Rver2 + Rver3 + Rver4) / 4
-# Rhorizontal = (Rhor1 + Rhor2 + Rhor3 + Rhor4) / 4
-# print(f'Rvert: {Rvertical}, Rhor: {Rhorizontal}')
+sb.switch(ass3)
+time.sleep(1)
+pg.enable_4_wire_probe(1e-3)
+time.sleep(1)
+c, v = pg.read_one()
+R[2] = v / c
+pg.disable_probe_current()
+
+sb.switch(ass4)
+time.sleep(1)
+pg.enable_4_wire_probe(1e-3)
+time.sleep(1)
+c, v = pg.read_one()
+R[3] = v / c
+pg.disable_probe_current()
+
+sb.switch(ass5)
+time.sleep(1)
+pg.enable_4_wire_probe(1e-3)
+time.sleep(1)
+c, v = pg.read_one()
+R[4] = v / c
+pg.disable_probe_current()
+
+sb.switch(ass6)
+time.sleep(1)
+pg.enable_4_wire_probe(1e-3)
+time.sleep(1)
+c, v = pg.read_one()
+R[5] = v / c
+pg.disable_probe_current()
+
+sb.switch(ass7)
+time.sleep(1)
+pg.enable_4_wire_probe(1e-3)
+time.sleep(1)
+c, v = pg.read_one()
+R[6] = v / c
+pg.disable_probe_current()
+
+sb.switch(ass8)
+time.sleep(1)
+pg.enable_4_wire_probe(1e-3)
+time.sleep(1)
+c, v = pg.read_one()
+R[7] = v / c
+
+print('Resistances: \n', R)
+pg.disable_probe_current()
