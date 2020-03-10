@@ -35,8 +35,8 @@ class DataCollector(QtCore.QObject):
     bb = instruments.BalanceBox()
     dmm = instruments.K2000()
     pg = instruments.K2461()
-    pulse1_assignments = {"I+": "D", "I-": "H"}  # configuration for a pulse from B to F
-    pulse2_assignments = {"I+": "B", "I-": "F"}  # configuration for a pulse from D to H
+    pulse1_assignments = {"I+": "B", "I-": "F"}  # configuration for a pulse from B to F
+    pulse2_assignments = {"I+": "D", "I-": "H"}  # configuration for a pulse from D to H
     measure_assignments = {"V1+": "B", "V1-": "D", "V2+": "C", "V2-": "G", "I+": "A", "I-": "E"}  # here V1 is Vxy
     resistance_assignments = {'A': 0, 'B': 0, 'C': 0, 'D': 0, 'E': 0, 'F': 0, 'G': 0, 'H': 0}
 
@@ -73,7 +73,13 @@ class DataCollector(QtCore.QObject):
         self.finished.emit()
 
     def pulse_and_measure(self, volts, pulse_mag, pulse_width, meas_curr, meas_n, loop_n):
-        # there is enough different between pos and neg pulses to keep these as "repeated code segments" IMO.
+        # see footnote on 6-110 in k2461 manual
+        self.pg.enable_4_wire_probe(meas_curr)
+        time.sleep(0.5)
+        self.pg.trigger_fetch()
+        self.pg.fetch_one()
+        self.pg.disable_probe_current()
+
         start_time = time.time()
         for loop_count in range(loop_n):
             self.mutex.lock()
@@ -82,12 +88,12 @@ class DataCollector(QtCore.QObject):
             self.mutex.unlock()
 
             self.sb.switch(self.pulse1_assignments)
-            time.sleep(300e-3)
+            time.sleep(200e-3)
             if volts:
                 self.pg.pulse_voltage(pulse_mag, pulse_width)
             else:
                 self.pg.pulse_current(pulse_mag, pulse_width)
-            time.sleep(300e-3)
+            time.sleep(200e-3)
             self.sb.switch(self.measure_assignments)
             self.pg.enable_4_wire_probe(meas_curr)
             self.dmm.measure_one()
@@ -97,7 +103,7 @@ class DataCollector(QtCore.QObject):
             vxy = np.zeros(meas_n)
             curr = np.zeros(meas_n)
             # weird bug where first value is higher by some small amount so this ignores first and measures again.
-            if loop_count == 1:
+            if loop_count == 0:
                 self.pg.trigger_fetch()
                 self.pg.fetch_one()
             for meas_count in range(meas_n):
@@ -115,7 +121,7 @@ class DataCollector(QtCore.QObject):
             self.mutex.unlock()
 
             self.sb.switch(self.pulse2_assignments)
-            time.sleep(300e-3)
+            time.sleep(200e-3)
             if volts:
                 self.pg.pulse_voltage(pulse_mag, pulse_width)
             else:
