@@ -168,7 +168,10 @@ class K2461:
         self.k2461.write('sour:func curr')
         self.k2461.write('sens:func "volt"')
         self.k2461.write('sens:volt:rang:auto on')
-        self.k2461.write(f'trac:make "defBuffer1", {10000}')
+        # self.k2461.write(f'trac:make "defbuffer1", {10000}')
+
+    def prepare_pulsing(self):
+        self.k2461.write('')
 
     # sets up and sends a single square wave pulse with duration "width" in seconds and amplitude "current" in Amps
     def pulse_current(self, current, width=1e-3, vlim=30):
@@ -181,16 +184,19 @@ class K2461:
         self.k2461.write('*wai')  # queue up following commands instead of activating them instantly
 
     # sets up and sends a single square wave pulse with duration "width" in second and amplitude "voltage" in Volts
-    def pulse_voltage(self, voltage, width=1e-3, clim=75e-3):
+    def pulse_voltage(self, voltage, width=1e-3, clim=100e-3):
+        # self.k2461.write('sour:func volt')
+        # self.k2461.write('sens:func "curr"')
         self.k2461.write('sens:curr:rsen off')  # measure 2 wire
         self.k2461.write(':form:asc:prec 16')  # data precision to 16esigner
+        self.k2461.write('sens:curr:rang:auto on')
         # set up pulse waveform
         # :SOURce[1]:PULSe:SWEep:<function>:LINear <biasLevel>, <start>, <stop>, <points>, <pulseWidth>, <measEnable>,
         # "<bufferName>", <delay>, <offTime>, <count>, <xBiasLimit>, <xPulseLimit>, <failAbort>, <dual>
         # page 6-110 in ref man
         self.k2461.write(
             f'sour:puls:swe:volt:lin 0, 0, {voltage}, 2, {width}, off, "defbuffer1", 0, 0, 1, {clim}, {clim}, off, off')
-        time.sleep(0.05)
+        self.k2461.write('*wai') # adding to wait before triggering
         self.k2461.write('init')  # send pulse
         self.k2461.write('*wai')  # queue up following commands instead of activating them instantly
 
