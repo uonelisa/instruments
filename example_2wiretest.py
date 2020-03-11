@@ -19,7 +19,7 @@ pg.connect()
 
 pg.enable_2_wire_probe(1e-3, 2)
 switch_box.switch(assignments_0)
-time.sleep(1)
+time.sleep(0.5)
 c, v = pg.read_one()
 R[0] = (v / c)
 
@@ -27,7 +27,7 @@ R[0] = (v / c)
 time.sleep(0.1)
 
 switch_box.switch(assignments_45)
-time.sleep(1)
+time.sleep(0.5)
 c, v = pg.read_one()
 R[1] = (v / c)
 
@@ -35,7 +35,7 @@ R[1] = (v / c)
 time.sleep(0.1)
 
 switch_box.switch(assignments_90)
-time.sleep(1)
+time.sleep(0.5)
 c, v = pg.read_one()
 R[2] = (v / c)
 
@@ -43,7 +43,7 @@ R[2] = (v / c)
 time.sleep(0.1)
 
 switch_box.switch(assignments_135)
-time.sleep(1)
+time.sleep(0.5)
 c, v = pg.read_one()
 R[3] = (v / c)
 

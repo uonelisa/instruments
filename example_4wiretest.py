@@ -25,65 +25,50 @@ ass8 = {"I+": "H", "I-": "D", "V1+": "A", "V1-": "C"}
 R = [0, 0, 0, 0, 0, 0, 0, 0]
 
 sb.switch(ass1)
-time.sleep(1)
+time.sleep(0.5)
 pg.enable_4_wire_probe(1e-3)
-time.sleep(1)
+time.sleep(0.1)
 c, v = pg.read_one()
 R[0] = v / c
-pg.disable_probe_current()
+
 
 sb.switch(ass2)
-time.sleep(1)
-pg.enable_4_wire_probe(1e-3)
-time.sleep(1)
+time.sleep(0.5)
+
 c, v = pg.read_one()
 R[1] = v / c
-pg.disable_probe_current()
+
 
 sb.switch(ass3)
-time.sleep(1)
-pg.enable_4_wire_probe(1e-3)
-time.sleep(1)
+time.sleep(0.5)
+
 c, v = pg.read_one()
 R[2] = v / c
-pg.disable_probe_current()
 
 sb.switch(ass4)
-time.sleep(1)
-pg.enable_4_wire_probe(1e-3)
-time.sleep(1)
+time.sleep(0.5)
 c, v = pg.read_one()
 R[3] = v / c
-pg.disable_probe_current()
 
 sb.switch(ass5)
-time.sleep(1)
-pg.enable_4_wire_probe(1e-3)
-time.sleep(1)
+time.sleep(0.5)
 c, v = pg.read_one()
 R[4] = v / c
-pg.disable_probe_current()
+
 
 sb.switch(ass6)
-time.sleep(1)
-pg.enable_4_wire_probe(1e-3)
-time.sleep(1)
+time.sleep(0.5)
 c, v = pg.read_one()
 R[5] = v / c
-pg.disable_probe_current()
+
 
 sb.switch(ass7)
-time.sleep(1)
-pg.enable_4_wire_probe(1e-3)
-time.sleep(1)
+time.sleep(0.5)
 c, v = pg.read_one()
 R[6] = v / c
-pg.disable_probe_current()
 
 sb.switch(ass8)
-time.sleep(1)
-pg.enable_4_wire_probe(1e-3)
-time.sleep(1)
+time.sleep(0.5)
 c, v = pg.read_one()
 R[7] = v / c
 
