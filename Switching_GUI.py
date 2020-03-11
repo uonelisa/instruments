@@ -37,7 +37,7 @@ class DataCollector(QtCore.QObject):
     pg = instruments.K2461()
     pulse1_assignments = {"I+": "B", "I-": "F"}  # configuration for a pulse from B to F
     pulse2_assignments = {"I+": "D", "I-": "H"}  # configuration for a pulse from D to H
-    measure_assignments = {"V1+": "B", "V1-": "D", "V2+": "C", "V2-": "G", "I+": "A", "I-": "E"}  # here V1 is Vxy
+    measure_assignments = {"I+": "A", "I-": "E", "V1+": "B", "V1-": "D", "V2+": "C", "V2-": "G"}  # here V1 is Vxy
     resistance_assignments = {'A': 0, 'B': 0, 'C': 0, 'D': 0, 'E': 0, 'F': 0, 'G': 0, 'H': 0}
 
     @QtCore.pyqtSlot(str, str, str, str, str, str, str, str, str, bool)
