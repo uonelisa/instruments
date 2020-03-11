@@ -1,5 +1,7 @@
 import instruments
 import time
+import numpy as np
+from tkinter import filedialog as dialog
 
 sb = instruments.SwitchBox()
 pg = instruments.K2461()
@@ -87,3 +89,13 @@ R[7] = v / c
 
 print('Resistances: \n', R)
 pg.disable_probe_current()
+R = np.array(R)
+name = dialog.asksaveasfilename(title='Save')
+if name:  # if a name was entered, don't save otherwise
+    if name[-4:] != '.txt':  # add .txt if not already there
+        name = f'{name}.txt'
+    np.savetxt(name, R, newline='\r\n', delimiter='\t')  # save
+    print(f'Data saved as {name}')
+else:
+    print('Data not saved')
+
