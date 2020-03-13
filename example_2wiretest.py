@@ -17,7 +17,7 @@ switch_box.connect(4)
 
 pg.connect()
 
-pg.enable_2_wire_probe(1e-3, 2)
+pg.enable_2_wire_probe(0.1e-3, 2)
 switch_box.switch(assignments_0)
 time.sleep(0.5)
 c, v = pg.read_one()

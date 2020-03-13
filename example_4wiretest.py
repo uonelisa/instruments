@@ -26,7 +26,7 @@ R = [0, 0, 0, 0, 0, 0, 0, 0]
 
 sb.switch(ass1)
 time.sleep(0.5)
-pg.enable_4_wire_probe(1e-3)
+pg.enable_4_wire_probe(0.1e-3)
 time.sleep(0.1)
 c, v = pg.read_one()
 R[0] = v / c
