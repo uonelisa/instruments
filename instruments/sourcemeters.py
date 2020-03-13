@@ -162,7 +162,7 @@ class K2461:
         rm = visa.ResourceManager('@ni')
         self.k2461 = rm.open_resource('USB0::0x05E6::0x2461::04121022::INSTR')
         self.k2461.timeout = 50000
-        print(self.k2461.query('*IDN?'))
+        print('connected to: ', self.k2461.query('*IDN?'))
         # self.k2400.write(':SYST:BEEP:STAT OFF')
         self.k2461.write(':*RST')
         self.k2461.write('sour:func curr')
