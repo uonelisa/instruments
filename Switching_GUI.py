@@ -144,12 +144,13 @@ class DataCollector(QtCore.QObject):
         self.pg.trigger_fetch()
         self.pg.fetch_one()
         self.pg.disable_probe_current()
+        # self.dmm.measure_one()
 
         start_time = time.time()
         for loop_count in range(loop_n):
             self.mutex.lock()
             if self.is_stopped:
-                break
+                return
             self.mutex.unlock()
 
             self.sb.switch(self.pulse1_assignments)
@@ -182,7 +183,7 @@ class DataCollector(QtCore.QObject):
 
             self.mutex.lock()
             if self.is_stopped:
-                break
+                return
             self.mutex.unlock()
 
             self.sb.switch(self.pulse2_assignments)
@@ -436,8 +437,8 @@ class MyGUI(QtWidgets.QMainWindow):
         try:
             data = np.column_stack(
                 (self.pos_time, self.pos_rxx, self.pos_rxy, self.neg_time, self.neg_rxx, self.neg_rxy))
-            alert_sound()
             prompt_window = QtWidgets.QWidget()
+            alert_sound()
             if QtWidgets.QMessageBox.question(prompt_window, 'Save Data?',
                                               'Would you like to save your data?', QtWidgets.QMessageBox.Yes,
                                               QtWidgets.QMessageBox.No) == QtWidgets.QMessageBox.Yes:
@@ -480,9 +481,12 @@ class MyGUI(QtWidgets.QMainWindow):
 
     def on_res_finished(self, two_wires, four_wires):
         save_window = QtWidgets.QWidget()
+        alert_sound()
         name, _ = QtWidgets.QFileDialog.getSaveFileName(save_window, "Save Resistance Data", "",
                                                         "Text Files (*.txt);; Data Files (*.dat);; All Files (*)")
         if name:  # if a name was entered, don't save otherwise
+            name = name.replace('_2wires', '')
+            name = name.replace('_4wires', '')
             name_two_wires = name.replace('.txt', '_2wires.txt')
             np.savetxt(name_two_wires, two_wires, newline='\n', delimiter='\t')  # save
             print(f'Two wires data saved as {name_two_wires}')
