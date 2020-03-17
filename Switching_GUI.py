@@ -120,7 +120,6 @@ class DataCollector(QtCore.QObject):
             c, v = self.pg.read_one()
             two_wires[i] = v / c
             self.pg.disable_probe_current()
-        self.pg.disable_probe_current()
         print('Two Wires: ', two_wires)
 
         for i in range(len(self.four_wire_assignments)):
