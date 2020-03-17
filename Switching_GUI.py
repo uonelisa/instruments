@@ -115,19 +115,24 @@ class DataCollector(QtCore.QObject):
         self.pg.enable_2_wire_probe(meas_curr)
         for i in range(len(self.two_wire_assignments)):
             self.sb.switch(self.two_wire_assignments[i])
-            time.sleep(0.5)
+            time.sleep(0.3)
+            self.pg.enable_2_wire_probe(meas_curr)
+            time.sleep(0.2)
             c, v = self.pg.read_one()
             two_wires[i] = v / c
+            self.pg.disable_probe_current()
         self.pg.disable_probe_current()
         print('Two Wires: ', two_wires)
 
         self.pg.enable_4_wire_probe(meas_curr)
         for i in range(len(self.four_wire_assignments)):
             self.sb.switch(self.four_wire_assignments[i])
-            time.sleep(0.5)
+            time.sleep(0.3)
+            self.pg.enable_4_wire_probe(meas_curr)
+            time.sleep(0.2)
             c, v = self.pg.read_one()
             four_wires[i] = v / c
-        self.pg.disable_probe_current()
+            self.pg.disable_probe_current()
         print('Four Wires: ', four_wires)
 
         if bb_enabled:
@@ -139,13 +144,15 @@ class DataCollector(QtCore.QObject):
 
     def pulse_and_measure(self, volts, pulse_mag, pulse_width, meas_curr, meas_n, loop_n):
         # see footnote on 6-110 in k2461 manual
+        self.sb.switch(self.measure_assignments)
+        time.sleep(0.3)
         self.pg.enable_4_wire_probe(meas_curr)
-        time.sleep(0.5)
+        time.sleep(0.2)
         self.pg.trigger_fetch()
         self.pg.fetch_one()
         self.pg.disable_probe_current()
         # self.dmm.measure_one()
-
+        time.sleep(0.2)
         start_time = time.time()
         for loop_count in range(loop_n):
             self.mutex.lock()
@@ -161,6 +168,7 @@ class DataCollector(QtCore.QObject):
                 self.pg.pulse_current(pulse_mag, pulse_width)
             time.sleep(200e-3)
             self.sb.switch(self.measure_assignments)
+            time.sleep(200e-3)
             self.pg.enable_4_wire_probe(meas_curr)
             self.dmm.measure_one()
             time.sleep(200e-3)
