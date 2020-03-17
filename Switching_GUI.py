@@ -112,7 +112,6 @@ class DataCollector(QtCore.QObject):
         two_wires = np.zeros(len(self.two_wire_assignments))
         four_wires = np.zeros(len(self.four_wire_assignments))
 
-        self.pg.enable_2_wire_probe(meas_curr)
         for i in range(len(self.two_wire_assignments)):
             self.sb.switch(self.two_wire_assignments[i])
             time.sleep(0.3)
@@ -124,7 +123,6 @@ class DataCollector(QtCore.QObject):
         self.pg.disable_probe_current()
         print('Two Wires: ', two_wires)
 
-        self.pg.enable_4_wire_probe(meas_curr)
         for i in range(len(self.four_wire_assignments)):
             self.sb.switch(self.four_wire_assignments[i])
             time.sleep(0.3)
