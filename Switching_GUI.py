@@ -14,12 +14,8 @@ from PyQt5 import QtCore, QtWidgets, uic
 matplotlib.use('Qt5Agg')
 
 
-def error_sound():
-    winsound.PlaySound('C:\Windows\Media\Windows Background.wav', winsound.SND_FILENAME)
-
-
-def alert_sound():
-    winsound.PlaySound('C:\Windows\Media\Windows Notify System Generic.wav', winsound.SND_FILENAME)
+error_sound = instruments.error_sound
+alert_sound = instruments.alert_sound
 
 
 class DataCollector(QtCore.QObject):
@@ -39,6 +35,9 @@ class DataCollector(QtCore.QObject):
     pulse1_assignments = {"I+": "B", "I-": "F"}  # configuration for a pulse from B to F
     pulse2_assignments = {"I+": "D", "I-": "H"}  # configuration for a pulse from D to H
     measure_assignments = {"I+": "A", "I-": "E", "V1+": "B", "V1-": "D", "V2+": "C", "V2-": "G"}  # here V1 is Vxy
+    # pulse1_assignments = {"I+": "A", "I-": "E"}
+    # pulse2_assignments = {"I+": "C", "I-": "G"}
+    # measure_assignments = {"I+": "H", "I-": "D", "V1+": "A", "V1-": "C", "V2+": "B", "V2-": "F"}
     resistance_assignments = {'A': 0, 'B': 0, 'C': 0, 'D': 0, 'E': 0, 'F': 0, 'G': 0, 'H': 0}
     two_wire_assignments = ({"I+": "A", "I-": "E"},
                             {"I+": "B", "I-": "F"},
@@ -156,7 +155,7 @@ class DataCollector(QtCore.QObject):
             if self.is_stopped:
                 return
             self.mutex.unlock()
-
+            print('Loop count: ', loop_count + 1, 'Pulse: 1')
             self.sb.switch(self.pulse1_assignments)
             time.sleep(200e-3)
             if volts:
@@ -191,6 +190,7 @@ class DataCollector(QtCore.QObject):
                 return
             self.mutex.unlock()
 
+            print('Loop count: ', loop_count + 1, 'Pulse: 2')
             self.sb.switch(self.pulse2_assignments)
             time.sleep(200e-3)
             if volts:
@@ -322,7 +322,8 @@ class DataCollector(QtCore.QObject):
 
         return connection_flag or conversion_flag, pulse_volts, pulse_mag, pulse_width, meas_curr, meas_n, loop_n
 
-
+# TODO: I need to figure out how to make the tabbing order of the boxes in the gui consistent with vertical placement.
+#  Currently it jumps around from top to middle, to bottom and back to 2nd then 4th then the next box.
 class MyGUI(QtWidgets.QMainWindow):
     def __init__(self):
         super(MyGUI, self).__init__()  # Call the inherited classes __init__ method
@@ -440,10 +441,11 @@ class MyGUI(QtWidgets.QMainWindow):
         print("Finished Loop")
         # when finished is emitted, this will save the data (I hope).
         try:
+            # alert_sound()
             data = np.column_stack(
                 (self.pos_time, self.pos_rxx, self.pos_rxy, self.neg_time, self.neg_rxx, self.neg_rxy))
             prompt_window = QtWidgets.QWidget()
-            alert_sound()
+
             if QtWidgets.QMessageBox.question(prompt_window, 'Save Data?',
                                               'Would you like to save your data?', QtWidgets.QMessageBox.Yes,
                                               QtWidgets.QMessageBox.No) == QtWidgets.QMessageBox.Yes:
@@ -460,7 +462,7 @@ class MyGUI(QtWidgets.QMainWindow):
         except ValueError:
             print("Could not stack. Please manually combine and save pos_temp_data and neg_temp_data.")
         except:
-            print("Data not saved, something went wrong!")
+            print("Data not saved, something went wrong! Please check the temp data files")
 
     def on_pos_data_ready(self, t, rxx, rxy):
         # After pos pulse, plot and store the data then save a backup
@@ -486,7 +488,6 @@ class MyGUI(QtWidgets.QMainWindow):
 
     def on_res_finished(self, two_wires, four_wires):
         save_window = QtWidgets.QWidget()
-        alert_sound()
         name, _ = QtWidgets.QFileDialog.getSaveFileName(save_window, "Save Resistance Data", "",
                                                         "Text Files (*.txt);; Data Files (*.dat);; All Files (*)")
         if name:  # if a name was entered, don't save otherwise
