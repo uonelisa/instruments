@@ -1,5 +1,6 @@
 import visa
 import numpy as np
+import time
 
 __all__ = ['K2400', 'K2401', 'K2461', 'K2661']
 
@@ -161,13 +162,22 @@ class K2461:
         rm = visa.ResourceManager('@ni')
         self.k2461 = rm.open_resource('USB0::0x05E6::0x2461::04121022::INSTR')
         self.k2461.timeout = 50000
-        print(self.k2461.query('*IDN?'))
+        print('connected to: ', self.k2461.query('*IDN?'))
         # self.k2400.write(':SYST:BEEP:STAT OFF')
         self.k2461.write(':*RST')
         self.k2461.write('sour:func curr')
         self.k2461.write('sens:func "volt"')
         self.k2461.write('sens:volt:rang:auto on')
-        self.k2461.write(f'trac:make "defBuffer1", {10000}')
+        # self.k2461.write(f'trac:make "defbuffer1", {10000}')
+
+    def prepare_pulsing(self, current, nplc=2):
+        self.k2461.write('sens:func "volt"')
+        self.k2461.write('sens:volt:rang:auto on')
+        self.k2461.write('sens:volt:rsen on')
+        self.k2461.write(f'sens:volt:nplc {nplc}')
+        self.k2461.write('sour:func curr')
+        self.k2461.write(f'sour:curr {current}')
+        self.k2461.write('sour:curr:vlim 2')
 
     # sets up and sends a single square wave pulse with duration "width" in seconds and amplitude "current" in Amps
     def pulse_current(self, current, width=1e-3, vlim=30):
@@ -180,15 +190,19 @@ class K2461:
         self.k2461.write('*wai')  # queue up following commands instead of activating them instantly
 
     # sets up and sends a single square wave pulse with duration "width" in second and amplitude "voltage" in Volts
-    def pulse_voltage(self, voltage, width=1e-3, clim=75e-3):
+    def pulse_voltage(self, voltage, width=1e-3, clim=100e-3):
+        # self.k2461.write('sour:func volt')
+        # self.k2461.write('sens:func "curr"')
         self.k2461.write('sens:curr:rsen off')  # measure 2 wire
         self.k2461.write(':form:asc:prec 16')  # data precision to 16esigner
+        self.k2461.write('sens:curr:rang:auto on')
         # set up pulse waveform
         # :SOURce[1]:PULSe:SWEep:<function>:LINear <biasLevel>, <start>, <stop>, <points>, <pulseWidth>, <measEnable>,
         # "<bufferName>", <delay>, <offTime>, <count>, <xBiasLimit>, <xPulseLimit>, <failAbort>, <dual>
         # page 6-110 in ref man
         self.k2461.write(
             f'sour:puls:swe:volt:lin 0, 0, {voltage}, 2, {width}, off, "defbuffer1", 0, 0, 1, {clim}, {clim}, off, off')
+        self.k2461.write('*wai') # adding to wait before triggering
         self.k2461.write('init')  # send pulse
         self.k2461.write('*wai')  # queue up following commands instead of activating them instantly
 
@@ -268,7 +282,7 @@ class K2461:
     # For use with "enable_2_wire_probe" or "enable_4_wire_probe" to read individual values
     def read_one(self):
         data = np.array([self.k2461.query_ascii_values(':READ? "defbuffer1", sour, read')])
-        print(data)
+        # print(data)
         cur = data[0][0]
         vol = data[0][1]
         return cur, vol

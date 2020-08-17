@@ -162,6 +162,16 @@ class Model_5210:
         except:
             print(f'Invalid time constant: {tc}. Must be 1ex or 3ex where -3<=x<=3')
 
+    def set_to_first_harmonic(self):
+        self.write_chars('IE 0')
+        time.sleep(0.1)
+        self.write_chars('F2F 0')
+
+    def set_to_second_harmonic(self):
+        self.write_chars('IE 0')
+        time.sleep(0.1)
+        self.write_chars('F2F 1')
+
     def set_sensitivity(self, sens):
         try:
             self.write_chars(f'SEN {self.sensitivities.index(sens)}')

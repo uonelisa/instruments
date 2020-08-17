@@ -26,6 +26,7 @@ class DataCollector(QtCore.QObject):
     finished = QtCore.pyqtSignal()
     pos_data_ready = QtCore.pyqtSignal(np.ndarray, np.ndarray, np.ndarray)
     neg_data_ready = QtCore.pyqtSignal(np.ndarray, np.ndarray, np.ndarray)
+    finished_res_measurement = QtCore.pyqtSignal(np.ndarray, np.ndarray)
     mutex = QtCore.QMutex()
     mutex.lock()
     is_stopped = False
@@ -35,51 +36,125 @@ class DataCollector(QtCore.QObject):
     bb = instruments.BalanceBox()
     dmm = instruments.K2000()
     pg = instruments.K2461()
-    pulse1_assignments = {"I+": "A", "I-": "F"}  # configuration for a pulse from B to F
-    pulse2_assignments = {"I+": "F", "I-": "A"}  # configuration for a pulse from D to H
-    measure_assignments = {"V1+": "D", "V1-": "G", "V2+": "C", "V2-": "D", "I+": "B", "I-": "E"}  # here V1 is Vxy
+    pulse1_assignments = {"I+": "B", "I-": "F"}  # configuration for a pulse from B to F
+    pulse2_assignments = {"I+": "D", "I-": "H"}  # configuration for a pulse from D to H
+    measure_assignments = {"I+": "A", "I-": "E", "V1+": "B", "V1-": "D", "V2+": "C", "V2-": "G"}  # here V1 is Vxy
     resistance_assignments = {'A': 0, 'B': 0, 'C': 0, 'D': 0, 'E': 0, 'F': 0, 'G': 0, 'H': 0}
+    two_wire_assignments = ({"I+": "A", "I-": "E"},
+                            {"I+": "B", "I-": "F"},
+                            {"I+": "C", "I-": "G"},
+                            {"I+": "D", "I-": "H"},
+                            )
+    four_wire_assignments = ({"I+": "A", "I-": "E", "V1+": "B", "V1-": "D"},
+                             {"I+": "B", "I-": "F", "V1+": "C", "V1-": "E"},
+                             {"I+": "C", "I-": "G", "V1+": "D", "V1-": "F"},
+                             {"I+": "D", "I-": "H", "V1+": "E", "V1-": "G"},
+                             {"I+": "E", "I-": "A", "V1+": "F", "V1-": "H"},
+                             {"I+": "F", "I-": "B", "V1+": "G", "V1-": "A"},
+                             {"I+": "G", "I-": "C", "V1+": "H", "V1-": "B"},
+                             {"I+": "H", "I-": "D", "V1+": "A", "V1-": "C"},
+                             )
 
-    @QtCore.pyqtSlot(str, str, str, str, str, str, str, str, str)
-    def start_measurement(self, mode, sb_port, bb_port, dmm_port, pulse_mag, pulse_width, meas_curr, meas_n, loop_n):
+    @QtCore.pyqtSlot(str, str, str, str, str, str, str, str, str, bool)
+    def start_measurement(self, mode, sb_port, bb_port, dmm_port, pulse_mag, pulse_width, meas_curr, meas_n, loop_n,
+                          bb_enabled):
 
         self.mutex.lock()
         self.is_stopped = False
         self.mutex.unlock()
 
-        error_flag, pulse_mag, pulse_width, meas_curr, meas_n, loop_n = self.handle_inputs(
-            sb_port, bb_port, dmm_port, pulse_mag, pulse_width, meas_curr, meas_n, loop_n)
+        error_flag, pulse_volts, pulse_mag, pulse_width, meas_curr, meas_n, loop_n = self.handle_inputs(mode,
+                                                                                                        sb_port,
+                                                                                                        bb_port,
+                                                                                                        dmm_port,
+                                                                                                        pulse_mag,
+                                                                                                        pulse_width,
+                                                                                                        meas_curr,
+                                                                                                        meas_n, loop_n,
+                                                                                                        bb_enabled)
         # If flag is true then something failed in parsing the inputs or connecting and the loop will not continue.
         if error_flag:
             return
 
-        self.bb.enable_all()
-        self.bb.set_resistances(self.resistance_assignments)
+        self.pulse_and_measure(pulse_volts, pulse_mag, pulse_width, meas_curr,
+                               meas_n, loop_n)
 
-        if mode == "Pulse Current":
-            self.pulse_and_measure(False, pulse_mag * 1e-3, pulse_width * 1e-3, meas_curr * 1e-6,
-                                   meas_n, loop_n)
-        elif mode == "Pulse Voltage":
-            self.pulse_and_measure(True, pulse_mag, pulse_width * 1e-3, meas_curr * 1e-6,
-                                   meas_n, loop_n)
-        else:
-            error_sound()
-            print("Error with pulsing method selection")
-            sys.exit(1)
         self.sb.close()
-        self.bb.close()
+        if bb_enabled:
+            self.bb.close()
         self.dmm.close()
         self.pg.close()
         # plt.pause()(1)
         self.finished.emit()
 
+    @QtCore.pyqtSlot(str, str,  str, str, str, str, str, str, str, bool)
+    def resistance_measurement(self, mode, sb_port, bb_port, dmm_port, pulse_mag, pulse_width, meas_curr, meas_n,
+                               loop_n,                               bb_enabled):
+        self.mutex.lock()
+        self.is_stopped = False
+        self.mutex.unlock()
+
+        # Converts the strings in the gui boxes into appropriate types and then connects and sets up instruments.
+        error_flag, pulse_volts, pulse_mag, pulse_width, meas_curr, meas_n, loop_n = self.handle_inputs(mode,
+                                                                                           sb_port, bb_port, dmm_port,
+                                                                                           pulse_mag, pulse_width,
+                                                                                           meas_curr, meas_n, loop_n,
+                                                                                           bb_enabled)
+
+        # If something fails to connect, the UI doesn't continue
+        if error_flag:
+            return
+
+        # reset the resistances to measure two wires properly
+        if bb_enabled:
+            self.bb.reset_resistances()
+
+        two_wires = np.zeros(len(self.two_wire_assignments))
+        four_wires = np.zeros(len(self.four_wire_assignments))
+
+        for i in range(len(self.two_wire_assignments)):
+            self.sb.switch(self.two_wire_assignments[i])
+            time.sleep(0.3)
+            self.pg.enable_2_wire_probe(meas_curr)
+            time.sleep(0.2)
+            c, v = self.pg.read_one()
+            two_wires[i] = v / c
+            self.pg.disable_probe_current()
+        print('Two Wires: ', two_wires)
+
+        for i in range(len(self.four_wire_assignments)):
+            self.sb.switch(self.four_wire_assignments[i])
+            time.sleep(0.3)
+            self.pg.enable_4_wire_probe(meas_curr)
+            time.sleep(0.2)
+            c, v = self.pg.read_one()
+            four_wires[i] = v / c
+            self.pg.disable_probe_current()
+        print('Four Wires: ', four_wires)
+
+        if bb_enabled:
+            self.bb.close()
+        self.dmm.close()
+        self.pg.close()
+        self.sb.close()
+        self.finished_res_measurement.emit(two_wires, four_wires)
+
     def pulse_and_measure(self, volts, pulse_mag, pulse_width, meas_curr, meas_n, loop_n):
-        # there is enough different between pos and neg pulses to keep these as "repeated code segments" IMO.
+        # see footnote on 6-110 in k2461 manual
+        self.sb.switch(self.measure_assignments)
+        time.sleep(0.3)
+        self.pg.enable_4_wire_probe(meas_curr)
+        time.sleep(0.2)
+        self.pg.trigger_fetch()
+        self.pg.fetch_one()
+        self.pg.disable_probe_current()
+        # self.dmm.measure_one()
+        time.sleep(0.2)
         start_time = time.time()
         for loop_count in range(loop_n):
             self.mutex.lock()
             if self.is_stopped:
-                break
+                return
             self.mutex.unlock()
 
             self.sb.switch(self.pulse1_assignments)
@@ -90,6 +165,7 @@ class DataCollector(QtCore.QObject):
                 self.pg.pulse_current(pulse_mag, pulse_width)
             time.sleep(200e-3)
             self.sb.switch(self.measure_assignments)
+            time.sleep(200e-3)
             self.pg.enable_4_wire_probe(meas_curr)
             self.dmm.measure_one()
             time.sleep(200e-3)
@@ -97,10 +173,14 @@ class DataCollector(QtCore.QObject):
             vxx = np.zeros(meas_n)
             vxy = np.zeros(meas_n)
             curr = np.zeros(meas_n)
+            # weird bug where first value is higher by some small amount so this ignores first and measures again.
+            if loop_count == 0:
+                self.pg.trigger_fetch()
+                self.pg.fetch_one()
             for meas_count in range(meas_n):
                 t[meas_count] = time.time()
-                self.dmm.trigger()
                 self.pg.trigger_fetch()
+                self.dmm.trigger()
                 vxx[meas_count], curr[meas_count] = self.pg.fetch_one()
                 vxy[meas_count] = self.dmm.fetch_one()
             self.pg.disable_probe_current()
@@ -108,8 +188,9 @@ class DataCollector(QtCore.QObject):
 
             self.mutex.lock()
             if self.is_stopped:
-                break
+                return
             self.mutex.unlock()
+
             self.sb.switch(self.pulse2_assignments)
             time.sleep(200e-3)
             if volts:
@@ -119,7 +200,7 @@ class DataCollector(QtCore.QObject):
             time.sleep(200e-3)
             self.sb.switch(self.measure_assignments)
             self.pg.enable_4_wire_probe(meas_curr)
-            self.dmm.measure_one()
+            # self.dmm.measure_one()
             time.sleep(200e-3)
             t = np.zeros(meas_n)
             curr = np.zeros(meas_n)
@@ -127,16 +208,26 @@ class DataCollector(QtCore.QObject):
             vxy = np.zeros(meas_n)
             for meas_count in range(meas_n):
                 t[meas_count] = time.time()
-                self.dmm.trigger()
                 self.pg.trigger_fetch()
+                self.dmm.trigger()
                 vxx[meas_count], curr[meas_count] = self.pg.fetch_one()
                 vxy[meas_count] = self.dmm.fetch_one()
             self.pg.disable_probe_current()
             self.neg_data_ready.emit(t - start_time, vxx / curr, vxy / curr)
 
-    def handle_inputs(self, sb_port, bb_port, dmm_port, pulse_mag, pulse_width, meas_curr, meas_n, loop_n):
+    def handle_inputs(self, mode, sb_port, bb_port, dmm_port, pulse_mag, pulse_width, meas_curr, meas_n, loop_n,
+                      bb_enabled):
         connection_flag = False
         conversion_flag = False
+
+        if mode == 'Pulse Current':
+            pulse_volts = False
+        elif mode == 'Pulse Voltage':
+            pulse_volts = True
+        else:
+            print('Pulse mode selection error?')
+            pulse_volts = False
+            conversion_flag = True
 
         try:
             sb_port = int(sb_port)
@@ -145,12 +236,15 @@ class DataCollector(QtCore.QObject):
             print('Invalid switchbox port please enter integer value.')
             conversion_flag = True
 
-        try:
-            bb_port = int(bb_port)
-        except ValueError:
-            error_sound()
-            print('Invalid balance box port please enter integer value.')
-            conversion_flag = True
+        if bb_enabled:
+            try:
+                bb_port = int(bb_port)
+            except ValueError:
+                error_sound()
+                print('Invalid balance box port please enter integer value.')
+                conversion_flag = True
+            self.bb.enable_all()
+            self.bb.set_resistances(self.resistance_assignments)
 
         try:
             dmm_port = int(dmm_port)
@@ -160,21 +254,24 @@ class DataCollector(QtCore.QObject):
             conversion_flag = True
 
         try:
-            pulse_mag = float(pulse_mag)
+            if pulse_volts:
+                pulse_mag = float(pulse_mag)
+            else:
+                pulse_mag = float(pulse_mag) * 1e-3
         except ValueError:
             error_sound()
             print('Invalid pulse magnitude. Please enter a valid float')
             conversion_flag = True
 
         try:
-            pulse_width = float(pulse_width)
+            pulse_width = float(pulse_width) * 1e-3
         except ValueError:
             error_sound()
             print('Invalid pulse width. Please enter a valid float')
             conversion_flag = True
 
         try:
-            meas_curr = float(meas_curr)
+            meas_curr = float(meas_curr) * 1e-6
         except ValueError:
             error_sound()
             print('Invalid probe current. Please enter a valid float')
@@ -201,12 +298,13 @@ class DataCollector(QtCore.QObject):
             print(f"Could not connect to switch box on port COM{sb_port}.")
             connection_flag = True
 
-        try:
-            self.bb.connect(bb_port)
-        except serial.SerialException:
-            error_sound()
-            print(f"Could not connect to balance box on port COM{bb_port}.")
-            connection_flag = True
+        if bb_enabled:
+            try:
+                self.bb.connect(bb_port)
+            except serial.SerialException:
+                error_sound()
+                print(f"Could not connect to balance box on port COM{bb_port}.")
+                connection_flag = True
 
         try:
             self.dmm.connect(dmm_port)
@@ -222,7 +320,7 @@ class DataCollector(QtCore.QObject):
             print("Could not connect to keithley 2461.")
             connection_flag = True
 
-        return connection_flag or conversion_flag, pulse_mag, pulse_width, meas_curr, meas_n, loop_n
+        return connection_flag or conversion_flag, pulse_volts, pulse_mag, pulse_width, meas_curr, meas_n, loop_n
 
 
 class MyGUI(QtWidgets.QMainWindow):
@@ -237,6 +335,7 @@ class MyGUI(QtWidgets.QMainWindow):
         # Connect gui elements to slots.
         self.pulse_type_combobox.currentTextChanged.connect(self.on_mode_changed)
         self.start_button.clicked.connect(self.on_start)
+        self.start_res_button.clicked.connect(self.on_res_measurement)
         self.stop_button.clicked.connect(self.on_stop)
         self.thread = QtCore.QThread()
         self.data_collector = DataCollector()
@@ -244,6 +343,7 @@ class MyGUI(QtWidgets.QMainWindow):
         self.data_collector.finished.connect(self.on_loop_over)
         self.data_collector.pos_data_ready.connect(self.on_pos_data_ready)
         self.data_collector.neg_data_ready.connect(self.on_neg_data_ready)
+        self.data_collector.finished_res_measurement.connect(self.on_res_finished)
 
     def on_start(self):
         # Reset the data arrays to not append to previous measurements.
@@ -264,7 +364,22 @@ class MyGUI(QtWidgets.QMainWindow):
                                         QtCore.Q_ARG(str, self.pulse_width_box.text()),
                                         QtCore.Q_ARG(str, self.probe_current_box.text()),
                                         QtCore.Q_ARG(str, self.measurement_count_box.text()),
-                                        QtCore.Q_ARG(str, self.loop_count_box.text())
+                                        QtCore.Q_ARG(str, self.loop_count_box.text()),
+                                        QtCore.Q_ARG(bool, self.bb_enable_checkbox.isChecked())
+                                        )
+
+    def on_res_measurement(self):
+        QtCore.QMetaObject.invokeMethod(self.data_collector, 'resistance_measurement', QtCore.Qt.QueuedConnection,
+                                        QtCore.Q_ARG(str, self.pulse_type_combobox.currentText()),
+                                        QtCore.Q_ARG(str, self.sb_port_box.text()),
+                                        QtCore.Q_ARG(str, self.bb_port_box.text()),
+                                        QtCore.Q_ARG(str, self.dmm_port_box.text()),
+                                        QtCore.Q_ARG(str, self.pulse_magnitude_box.text()),
+                                        QtCore.Q_ARG(str, self.pulse_width_box.text()),
+                                        QtCore.Q_ARG(str, self.probe_current_box.text()),
+                                        QtCore.Q_ARG(str, self.measurement_count_box.text()),
+                                        QtCore.Q_ARG(str, self.loop_count_box.text()),
+                                        QtCore.Q_ARG(bool, self.bb_enable_checkbox.isChecked())
                                         )
 
     def create_plots(self):
@@ -327,8 +442,8 @@ class MyGUI(QtWidgets.QMainWindow):
         try:
             data = np.column_stack(
                 (self.pos_time, self.pos_rxx, self.pos_rxy, self.neg_time, self.neg_rxx, self.neg_rxy))
-            alert_sound()
             prompt_window = QtWidgets.QWidget()
+            alert_sound()
             if QtWidgets.QMessageBox.question(prompt_window, 'Save Data?',
                                               'Would you like to save your data?', QtWidgets.QMessageBox.Yes,
                                               QtWidgets.QMessageBox.No) == QtWidgets.QMessageBox.Yes:
@@ -368,6 +483,24 @@ class MyGUI(QtWidgets.QMainWindow):
         self.refresh_graphs()
         data = np.column_stack((self.neg_time, self.neg_rxx, self.neg_rxy))
         np.savetxt('neg_temp_data.txt', data, newline='\n', delimiter='\t')
+
+    def on_res_finished(self, two_wires, four_wires):
+        save_window = QtWidgets.QWidget()
+        alert_sound()
+        name, _ = QtWidgets.QFileDialog.getSaveFileName(save_window, "Save Resistance Data", "",
+                                                        "Text Files (*.txt);; Data Files (*.dat);; All Files (*)")
+        if name:  # if a name was entered, don't save otherwise
+            name = name.replace('_2wires', '')
+            name = name.replace('_4wires', '')
+            name_two_wires = name.replace('.txt', '_2wires.txt')
+            np.savetxt(name_two_wires, two_wires, newline='\n', delimiter='\t')  # save
+            print(f'Two wires data saved as {name_two_wires}')
+
+            name_four_wires = name.replace('.txt', '_4wires.txt')
+            np.savetxt(name_four_wires, four_wires, newline='\n', delimiter='\t')  # save
+            print(f'Four wires data saved as {name_four_wires}')
+        else:
+            print('No Filename: Data not saved')
 
     def refresh_graphs(self):
         # Simply redraw the axes after changing data.

@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>385</width>
-    <height>185</height>
+    <width>499</width>
+    <height>301</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -47,10 +47,10 @@
          </item>
         </widget>
        </item>
-       <item row="0" column="1">
-        <widget class="QLineEdit" name="pulse_magnitude_box">
+       <item row="3" column="1">
+        <widget class="QLineEdit" name="measurement_count_box">
          <property name="text">
-          <string>5</string>
+          <string>200</string>
          </property>
         </widget>
        </item>
@@ -68,31 +68,10 @@
          </property>
         </widget>
        </item>
-       <item row="1" column="1">
-        <widget class="QLineEdit" name="pulse_width_box">
-         <property name="text">
-          <string>1</string>
-         </property>
-        </widget>
-       </item>
        <item row="1" column="2">
         <widget class="QLabel" name="pulse_width_units_label">
          <property name="text">
           <string>ms</string>
-         </property>
-        </widget>
-       </item>
-       <item row="2" column="0">
-        <widget class="QLabel" name="probe_current_label">
-         <property name="text">
-          <string>Probe Current</string>
-         </property>
-        </widget>
-       </item>
-       <item row="2" column="1">
-        <widget class="QLineEdit" name="probe_current_box">
-         <property name="text">
-          <string>500</string>
          </property>
         </widget>
        </item>
@@ -103,17 +82,10 @@
          </property>
         </widget>
        </item>
-       <item row="3" column="0">
-        <widget class="QLabel" name="measurement_count_label">
+       <item row="0" column="1">
+        <widget class="QLineEdit" name="pulse_magnitude_box">
          <property name="text">
-          <string>N Per Loop</string>
-         </property>
-        </widget>
-       </item>
-       <item row="3" column="1">
-        <widget class="QLineEdit" name="measurement_count_box">
-         <property name="text">
-          <string>200</string>
+          <string>5</string>
          </property>
         </widget>
        </item>
@@ -124,10 +96,38 @@
          </property>
         </widget>
        </item>
+       <item row="2" column="1">
+        <widget class="QLineEdit" name="probe_current_box">
+         <property name="text">
+          <string>100</string>
+         </property>
+        </widget>
+       </item>
        <item row="4" column="1">
         <widget class="QLineEdit" name="loop_count_box">
          <property name="text">
           <string>2</string>
+         </property>
+        </widget>
+       </item>
+       <item row="2" column="0">
+        <widget class="QLabel" name="probe_current_label">
+         <property name="text">
+          <string>Probe Current</string>
+         </property>
+        </widget>
+       </item>
+       <item row="3" column="0">
+        <widget class="QLabel" name="measurement_count_label">
+         <property name="text">
+          <string>N Per Loop</string>
+         </property>
+        </widget>
+       </item>
+       <item row="1" column="1">
+        <widget class="QLineEdit" name="pulse_width_box">
+         <property name="text">
+          <string>1</string>
          </property>
         </widget>
        </item>
@@ -141,48 +141,184 @@
         <property name="title">
          <string>Ports</string>
         </property>
-        <layout class="QFormLayout" name="formLayout">
-         <item row="1" column="0">
+        <layout class="QGridLayout" name="gridLayout_2">
+         <item row="6" column="1">
+          <widget class="QGroupBox" name="horizontalGroupBox">
+           <layout class="QHBoxLayout" name="horizontalLayout_5">
+            <property name="bottomMargin">
+             <number>1</number>
+            </property>
+            <item>
+             <widget class="QRadioButton" name="tc_none_button">
+              <property name="text">
+               <string>None</string>
+              </property>
+              <property name="checked">
+               <bool>true</bool>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QRadioButton" name="tc_hightemp_button">
+              <property name="text">
+               <string>HTS</string>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QRadioButton" name="tc_tec_button">
+              <property name="text">
+               <string>TEC</string>
+              </property>
+             </widget>
+            </item>
+           </layout>
+          </widget>
+         </item>
+         <item row="5" column="0">
+          <widget class="QLabel" name="label">
+           <property name="text">
+            <string>TC Port</string>
+           </property>
+          </widget>
+         </item>
+         <item row="5" column="1">
+          <widget class="QLineEdit" name="lineEdit">
+           <property name="text">
+            <string>15</string>
+           </property>
+          </widget>
+         </item>
+         <item row="2" column="0">
           <widget class="QLabel" name="sb_port_label">
            <property name="text">
             <string>Switch Box Port</string>
            </property>
           </widget>
          </item>
-         <item row="1" column="1">
-          <widget class="QLineEdit" name="sb_port_box">
-           <property name="text">
-            <string>4</string>
-           </property>
-          </widget>
-         </item>
-         <item row="2" column="0">
-          <widget class="QLabel" name="bb_port_label">
-           <property name="text">
-            <string>Balance Box Port</string>
-           </property>
-          </widget>
-         </item>
-         <item row="2" column="1">
-          <widget class="QLineEdit" name="bb_port_box">
-           <property name="text">
-            <string>5</string>
-           </property>
-          </widget>
-         </item>
-         <item row="0" column="0">
+         <item row="1" column="0">
           <widget class="QLabel" name="dmm_port_label">
            <property name="text">
             <string>Keithley 2000 Port</string>
            </property>
           </widget>
          </item>
-         <item row="0" column="1">
+         <item row="3" column="0">
+          <widget class="QLabel" name="bb_port_label">
+           <property name="text">
+            <string>Balance Box Port</string>
+           </property>
+          </widget>
+         </item>
+         <item row="1" column="2">
+          <spacer name="horizontalSpacer">
+           <property name="orientation">
+            <enum>Qt::Horizontal</enum>
+           </property>
+           <property name="sizeHint" stdset="0">
+            <size>
+             <width>40</width>
+             <height>20</height>
+            </size>
+           </property>
+          </spacer>
+         </item>
+         <item row="6" column="0">
+          <widget class="QLabel" name="tc_label">
+           <property name="text">
+            <string>Temp Control</string>
+           </property>
+          </widget>
+         </item>
+         <item row="4" column="0">
+          <widget class="QLabel" name="balance_box_enable_label">
+           <property name="text">
+            <string>Balance Box?</string>
+           </property>
+          </widget>
+         </item>
+         <item row="2" column="2">
+          <spacer name="horizontalSpacer_2">
+           <property name="orientation">
+            <enum>Qt::Horizontal</enum>
+           </property>
+           <property name="sizeHint" stdset="0">
+            <size>
+             <width>40</width>
+             <height>20</height>
+            </size>
+           </property>
+          </spacer>
+         </item>
+         <item row="1" column="1">
           <widget class="QLineEdit" name="dmm_port_box">
            <property name="text">
             <string>3</string>
            </property>
           </widget>
+         </item>
+         <item row="2" column="1">
+          <widget class="QLineEdit" name="sb_port_box">
+           <property name="text">
+            <string>4</string>
+           </property>
+          </widget>
+         </item>
+         <item row="3" column="2">
+          <spacer name="horizontalSpacer_3">
+           <property name="orientation">
+            <enum>Qt::Horizontal</enum>
+           </property>
+           <property name="sizeHint" stdset="0">
+            <size>
+             <width>40</width>
+             <height>20</height>
+            </size>
+           </property>
+          </spacer>
+         </item>
+         <item row="3" column="1">
+          <widget class="QLineEdit" name="bb_port_box">
+           <property name="text">
+            <string>5</string>
+           </property>
+          </widget>
+         </item>
+         <item row="4" column="2">
+          <spacer name="horizontalSpacer_4">
+           <property name="orientation">
+            <enum>Qt::Horizontal</enum>
+           </property>
+           <property name="sizeHint" stdset="0">
+            <size>
+             <width>40</width>
+             <height>20</height>
+            </size>
+           </property>
+          </spacer>
+         </item>
+         <item row="4" column="1">
+          <widget class="QCheckBox" name="bb_enable_checkbox">
+           <property name="enabled">
+            <bool>true</bool>
+           </property>
+           <property name="text">
+            <string/>
+           </property>
+          </widget>
+         </item>
+         <item row="5" column="2">
+          <spacer name="horizontalSpacer_5">
+           <property name="orientation">
+            <enum>Qt::Horizontal</enum>
+           </property>
+           <property name="sizeHint" stdset="0">
+            <size>
+             <width>40</width>
+             <height>20</height>
+            </size>
+           </property>
+          </spacer>
          </item>
         </layout>
        </widget>
@@ -192,7 +328,14 @@
         <item>
          <widget class="QPushButton" name="start_button">
           <property name="text">
-           <string>Start</string>
+           <string>Start Switching</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QPushButton" name="start_res_button">
+          <property name="text">
+           <string>Start Resistance Measurements</string>
           </property>
          </widget>
         </item>
