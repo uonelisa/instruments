@@ -160,11 +160,11 @@ class K2461:
     # connects to the k2461. If a different k2461 is bought, may have to add a loop to try all known resource names
     def connect(self):
         rm = visa.ResourceManager('@ni')
-        self.k2461 = rm.open_resource('USB0::0x05E6::0x2461::04121022::INSTR')
+        self.k2461 = rm.open_resource('USB0::0x05E6::0x2461::04121022::INSTR', write_termination='\n', send_end=True)
         self.k2461.timeout = 50000
         print('connected to: ', self.k2461.query('*IDN?'))
         # self.k2400.write(':SYST:BEEP:STAT OFF')
-        self.k2461.write(':*RST')
+        self.k2461.write('*RST')
         self.k2461.write('sour:func curr')
         self.k2461.write('sens:func "volt"')
         self.k2461.write('sens:volt:rang:auto on')
@@ -194,7 +194,7 @@ class K2461:
         # self.k2461.write('sour:func volt')
         # self.k2461.write('sens:func "curr"')
         self.k2461.write('sens:curr:rsen off')  # measure 2 wire
-        self.k2461.write(':form:asc:prec 16')  # data precision to 16esigner
+        self.k2461.write('form:asc:prec 16')  # data precision to 16esigner
         self.k2461.write('sens:curr:rang:auto on')
         # set up pulse waveform
         # :SOURce[1]:PULSe:SWEep:<function>:LINear <biasLevel>, <start>, <stop>, <points>, <pulseWidth>, <measEnable>,
@@ -202,7 +202,11 @@ class K2461:
         # page 6-110 in ref man
         self.k2461.write(
             f'sour:puls:swe:volt:lin 0, 0, {voltage}, 2, {width}, off, "defbuffer1", 0, 0, 1, {clim}, {clim}, off, off')
-        self.k2461.write('*wai') # adding to wait before triggering
+
+
+        self.k2461.write('*wai')  # adding to wait before triggering
+        self.set_ext_trig()
+        self.k2461.write('*wai')  # adding to wait before triggering
         self.k2461.write('init')  # send pulse
         self.k2461.write('*wai')  # queue up following commands instead of activating them instantly
 
@@ -297,6 +301,13 @@ class K2461:
         self.k2461.write('*sre 0')
         self.k2461.write('outp off')
         self.k2461.close()
+
+    def set_ext_trig(self, pin=3):
+        # todo(stu) write the commands to get the trigger link working
+        self.k2461.write(f'DIG:LINE{pin}:MODE TRIG, OUT')
+        self.k2461.write(f'TRIG:DIG{pin}:OUT:LOG POS')
+        # self.k2461.write(f'TRIG:DIG{pin}:OUT:PULS 1e-4')
+
 
 
 class K2661:
