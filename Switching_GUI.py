@@ -36,6 +36,7 @@ class DataCollector(QtCore.QObject):
     bb = instruments.BalanceBox()
     dmm = instruments.K2000()
     pg = instruments.K2461()
+    scope = instruments.DS1104()
     pulse1_assignments = {"I+": "B", "I-": "F"}  # configuration for a pulse from B to F
     pulse2_assignments = {"I+": "D", "I-": "H"}  # configuration for a pulse from D to H
     measure_assignments = {"I+": "A", "I-": "E", "V1+": "B", "V1-": "D", "V2+": "C", "V2-": "G"}  # here V1 is Vxy
@@ -57,7 +58,7 @@ class DataCollector(QtCore.QObject):
 
     @QtCore.pyqtSlot(str, str, str, str, str, str, str, str, str, bool)
     def start_measurement(self, mode, sb_port, bb_port, dmm_port, pulse_mag, pulse_width, meas_curr, meas_n, loop_n,
-                          bb_enabled):
+                          bb_enabled, scope_enabled):
 
         self.mutex.lock()
         self.is_stopped = False
@@ -71,7 +72,8 @@ class DataCollector(QtCore.QObject):
                                                                                                         pulse_width,
                                                                                                         meas_curr,
                                                                                                         meas_n, loop_n,
-                                                                                                        bb_enabled)
+                                                                                                        bb_enabled,
+                                                                                                        scope_enabled)
         # If flag is true then something failed in parsing the inputs or connecting and the loop will not continue.
         if error_flag:
             return
@@ -216,7 +218,7 @@ class DataCollector(QtCore.QObject):
             self.neg_data_ready.emit(t - start_time, vxx / curr, vxy / curr)
 
     def handle_inputs(self, mode, sb_port, bb_port, dmm_port, pulse_mag, pulse_width, meas_curr, meas_n, loop_n,
-                      bb_enabled):
+                      bb_enabled, scope_enabled):
         connection_flag = False
         conversion_flag = False
 
@@ -306,6 +308,14 @@ class DataCollector(QtCore.QObject):
                 print(f"Could not connect to balance box on port COM{bb_port}.")
                 connection_flag = True
 
+        if scope_enabled:
+            try:
+                self.scope.connect()
+            except visa.VisaIOError:
+                error_sound()
+                print("Could not connect to RIGOL DS1104Z.")
+                connection_flag = True
+
         try:
             self.dmm.connect(dmm_port)
         except visa.VisaIOError:
@@ -365,7 +375,8 @@ class MyGUI(QtWidgets.QMainWindow):
                                         QtCore.Q_ARG(str, self.probe_current_box.text()),
                                         QtCore.Q_ARG(str, self.measurement_count_box.text()),
                                         QtCore.Q_ARG(str, self.loop_count_box.text()),
-                                        QtCore.Q_ARG(bool, self.bb_enable_checkbox.isChecked())
+                                        QtCore.Q_ARG(bool, self.bb_enable_checkbox.isChecked()),
+                                        QtCore.Q_ARG(bool, self.scope_checkbox.isChecked())
                                         )
 
     def on_res_measurement(self):
