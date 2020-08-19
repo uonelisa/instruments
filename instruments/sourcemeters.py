@@ -182,7 +182,7 @@ class K2461:
     # sets up and sends a single square wave pulse with duration "width" in seconds and amplitude "current" in Amps
     def pulse_current(self, current, width=1e-3, vlim=30):
         self.k2461.write('sens:volt:rsen off')  # measure 2 wire
-        self.k2461.write(':form:asc:prec 16')  # data precision to 16
+        self.k2461.write('form:asc:prec 16')  # data precision to 16
         # set up pulse waveform
         self.k2461.write(
             f'sour:puls:swe:curr:lin 0, 0, {current}, 2, {width}, off, "defbuffer1", 0, 0, 1, {vlim}, {vlim}, off, off')
@@ -233,11 +233,11 @@ class K2461:
     # initiates the measurement set up using measure
     def trigger(self):
         # self.k2461.write('init')
-        self.k2461.write(':trac:trig "mybuffer"')
+        self.k2461.write('trac:trig "mybuffer"')
         self.k2461.write('*wai')
 
     def trigger_fetch(self):
-        self.k2461.write(':trac:trig "defbuffer1"')
+        self.k2461.write('trac:trig "defbuffer1"')
         self.k2461.write('*wai')
 
     # reads num data points from the buffer
@@ -285,14 +285,14 @@ class K2461:
 
     # For use with "enable_2_wire_probe" or "enable_4_wire_probe" to read individual values
     def read_one(self):
-        data = np.array([self.k2461.query_ascii_values(':READ? "defbuffer1", sour, read')])
+        data = np.array([self.k2461.query_ascii_values('read? "defbuffer1", sour, read')])
         # print(data)
         cur = data[0][0]
         vol = data[0][1]
         return cur, vol
 
     def fetch_one(self):
-        data = self.k2461.query_ascii_values(':fetch? "defbuffer1", sour, read')
+        data = self.k2461.query_ascii_values('fetch? "defbuffer1", sour, read')
         return data[1], data[0]
 
     # closes connections and allows for a new process to connect
@@ -304,8 +304,8 @@ class K2461:
 
     def set_ext_trig(self, pin=3):
         # todo(stu) write the commands to get the trigger link working
-        self.k2461.write(f'DIG:LINE{pin}:MODE TRIG, OUT')
-        self.k2461.write(f'TRIG:DIG{pin}:OUT:LOG POS')
+        self.k2461.write(f'dig:line{pin}:mode trig, out')
+        self.k2461.write(f'trig:dig{pin}:out:log pos')
         # self.k2461.write(f'TRIG:DIG{pin}:OUT:PULS 1e-4')
 
 
