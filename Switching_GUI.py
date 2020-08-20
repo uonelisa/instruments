@@ -37,6 +37,7 @@ class DataCollector(QtCore.QObject):
     dmm = instruments.K2000()
     pg = instruments.K2461()
     scope = instruments.DS1104()
+    scope_enabled = False
     pulse1_assignments = {"I+": "B", "I-": "F"}  # configuration for a pulse from B to F
     pulse2_assignments = {"I+": "D", "I-": "H"}  # configuration for a pulse from D to H
     measure_assignments = {"I+": "A", "I-": "E", "V1+": "B", "V1-": "D", "V2+": "C", "V2-": "G"}  # here V1 is Vxy
@@ -56,10 +57,10 @@ class DataCollector(QtCore.QObject):
                              {"I+": "H", "I-": "D", "V1+": "A", "V1-": "C"},
                              )
 
-    @QtCore.pyqtSlot(str, str, str, str, str, str, str, str, str, bool)
+    @QtCore.pyqtSlot(str, str, str, str, str, str, str, str, str, tuple)
     def start_measurement(self, mode, sb_port, bb_port, dmm_port, pulse_mag, pulse_width, meas_curr, meas_n, loop_n,
-                          bb_enabled, scope_enabled):
-
+                          checkboxes):
+        bb_enabled, scope_enabled = checkboxes
         self.mutex.lock()
         self.is_stopped = False
         self.mutex.unlock()
@@ -84,6 +85,8 @@ class DataCollector(QtCore.QObject):
         self.sb.close()
         if bb_enabled:
             self.bb.close()
+        if scope_enabled:
+            self.scope.close()
         self.dmm.close()
         self.pg.close()
         # plt.pause()(1)
@@ -91,7 +94,7 @@ class DataCollector(QtCore.QObject):
 
     @QtCore.pyqtSlot(str, str,  str, str, str, str, str, str, str, bool)
     def resistance_measurement(self, mode, sb_port, bb_port, dmm_port, pulse_mag, pulse_width, meas_curr, meas_n,
-                               loop_n,                               bb_enabled):
+                               loop_n, bb_enabled):
         self.mutex.lock()
         self.is_stopped = False
         self.mutex.unlock()
@@ -143,15 +146,10 @@ class DataCollector(QtCore.QObject):
 
     def pulse_and_measure(self, volts, pulse_mag, pulse_width, meas_curr, meas_n, loop_n):
         # see footnote on 6-110 in k2461 manual
-        self.sb.switch(self.measure_assignments)
-        time.sleep(0.3)
-        self.pg.enable_4_wire_probe(meas_curr)
-        time.sleep(0.2)
-        self.pg.trigger_fetch()
-        self.pg.fetch_one()
-        self.pg.disable_probe_current()
-        # self.dmm.measure_one()
-        time.sleep(0.2)
+
+        # todo(stu) add all the code to retrieve and save the oscope data
+        self.dmm.measure_one()
+
         start_time = time.time()
         for loop_count in range(loop_n):
             self.mutex.lock()
@@ -160,25 +158,29 @@ class DataCollector(QtCore.QObject):
             self.mutex.unlock()
 
             self.sb.switch(self.pulse1_assignments)
-            time.sleep(200e-3)
+            self.pg.set_ext_trig(3)
+            if self.scope_enabled:
+                self.scope.single_trig()
             if volts:
-                self.pg.pulse_voltage(pulse_mag, pulse_width)
+                self.pg.prepare_pulsing_voltage(pulse_mag, pulse_width)
+            time.sleep(0.2)
+            if volts:
+                self.pg.pulse_voltage()
             else:
                 self.pg.pulse_current(pulse_mag, pulse_width)
             time.sleep(200e-3)
             self.sb.switch(self.measure_assignments)
             time.sleep(200e-3)
             self.pg.enable_4_wire_probe(meas_curr)
-            self.dmm.measure_one()
             time.sleep(200e-3)
             t = np.zeros(meas_n)
             vxx = np.zeros(meas_n)
             vxy = np.zeros(meas_n)
             curr = np.zeros(meas_n)
             # weird bug where first value is higher by some small amount so this ignores first and measures again.
-            if loop_count == 0:
-                self.pg.trigger_fetch()
-                self.pg.fetch_one()
+            # if loop_count == 0:
+            #     self.pg.trigger_fetch()
+            #     self.pg.fetch_one()
             for meas_count in range(meas_n):
                 t[meas_count] = time.time()
                 self.pg.trigger_fetch()
@@ -194,16 +196,20 @@ class DataCollector(QtCore.QObject):
             self.mutex.unlock()
 
             self.sb.switch(self.pulse2_assignments)
-            time.sleep(200e-3)
+            self.pg.set_ext_trig(3)
+            if self.scope_enabled:
+                self.scope.single_trig()
             if volts:
-                self.pg.pulse_voltage(pulse_mag, pulse_width)
+                self.pg.prepare_pulsing_voltage(pulse_mag, pulse_width)
+            time.sleep(0.2)
+            if volts:
+                self.pg.pulse_voltage()
             else:
                 self.pg.pulse_current(pulse_mag, pulse_width)
             time.sleep(200e-3)
             self.sb.switch(self.measure_assignments)
             self.pg.enable_4_wire_probe(meas_curr)
-            # self.dmm.measure_one()
-            time.sleep(200e-3)
+            time.sleep(500e-3)
             t = np.zeros(meas_n)
             curr = np.zeros(meas_n)
             vxx = np.zeros(meas_n)
@@ -308,13 +314,20 @@ class DataCollector(QtCore.QObject):
                 print(f"Could not connect to balance box on port COM{bb_port}.")
                 connection_flag = True
 
-        if scope_enabled:
+        if scope_enabled & pulse_volts:
             try:
                 self.scope.connect()
+                self.scope.prepare_for_pulse(pulse_mag)
+                self.scope.set_trig_chan(3)
+                # self.scope.single_trig()
+                self.scope_enabled = True
+                time.sleep(12)
             except visa.VisaIOError:
                 error_sound()
                 print("Could not connect to RIGOL DS1104Z.")
                 connection_flag = True
+        else:
+            self.scope_enabled = False
 
         try:
             self.dmm.connect(dmm_port)
@@ -364,7 +377,8 @@ class MyGUI(QtWidgets.QMainWindow):
         self.pos_rxy = np.array([])
         self.neg_rxy = np.array([])
         self.create_plots()  # make figure axes and so on
-        # start the data collector method (can't use invoke method because can't pass arguments)
+
+        # maximum of 9 arguments
         QtCore.QMetaObject.invokeMethod(self.data_collector, 'start_measurement', QtCore.Qt.QueuedConnection,
                                         QtCore.Q_ARG(str, self.pulse_type_combobox.currentText()),
                                         QtCore.Q_ARG(str, self.sb_port_box.text()),
@@ -375,8 +389,7 @@ class MyGUI(QtWidgets.QMainWindow):
                                         QtCore.Q_ARG(str, self.probe_current_box.text()),
                                         QtCore.Q_ARG(str, self.measurement_count_box.text()),
                                         QtCore.Q_ARG(str, self.loop_count_box.text()),
-                                        QtCore.Q_ARG(bool, self.bb_enable_checkbox.isChecked()),
-                                        QtCore.Q_ARG(bool, self.scope_checkbox.isChecked())
+                                        QtCore.Q_ARG(tuple, (self.bb_enable_checkbox.isChecked(), self.scope_checkbox.isChecked()))
                                         )
 
     def on_res_measurement(self):

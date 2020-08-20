@@ -11,8 +11,9 @@ class DS1104:
         rm = visa.ResourceManager('@ni')
         self.scope = rm.open_resource('USB0::0x1AB1::0x04CE::DS1ZB192600334::INSTR')
         self.scope.timeout = 50000
+        print('connected to: ', self.scope.query('*idn?'))
         self.scope.write('*rst')
-        self.scope.write('acq:mdep 6000000')
+        self.scope.write('acq:mdep 60000')
 
     def prepare_for_pulse(self, pulsev):
         lim = pulsev * 1.2
@@ -26,23 +27,25 @@ class DS1104:
         self.scope.write(f'chan{2}:rang {lim}')
         self.scope.write('wav:form ascii')
         self.scope.write('wav:mode raw')
-        self.scope.write('tim:scal 0.02')
-        self.scope.write('tim:range 0.24')
+        self.scope.write('tim:scal 0.0005')
+        self.scope.write('tim:range 0.006')
+        self.scope.write('acq:mdep 60000')
 
     # Should probably make this set a bunch of custom stuff
     def set_trig_chan(self, n=3):
         self.scope.write(f'trig:edg:sour chan{n}')
-
         self.scope.write(f'chan{n}:prob 1')
         self.scope.write(f'chan{n}:scale 2')
         self.scope.write(f'chan{n}:rang 16')
         self.scope.write('trig:mode edge')
-        self.scope.write('trig:edg:slop neg')
+        self.scope.write('trig:edg:slop pos')
         self.scope.write('trig:edg:lev 2.5')
-        # self.scope.write('trig:swe single')
+        self.scope.write('trig:swe single')
+        self.stop()
 
     def single_trig(self):
-        self.scope.write('trig:swe single')
+        self.scope.write('single')
+
 
     def get_data(self, start, stop):
         self.scope.write(f'stop')
@@ -61,3 +64,12 @@ class DS1104:
 
     def get_time_inc(self):
         return self.scope.query('wav:xinc?')
+
+    def run(self):
+        self.scope.write('run')
+
+    def stop(self):
+        self.scope.write(f'stop')
+
+    def close(self):
+        self.scope.close()
