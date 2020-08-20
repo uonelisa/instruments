@@ -160,15 +160,10 @@ class K2461:
     # connects to the k2461. If a different k2461 is bought, may have to add a loop to try all known resource names
     def connect(self):
         rm = visa.ResourceManager('@ni')
-        self.k2461 = rm.open_resource('USB0::0x05E6::0x2461::04121022::INSTR')
+        self.k2461 = rm.open_resource('USB0::0x05E6::0x2461::04121022::INSTR', write_termination='\n', send_end=True)
         self.k2461.timeout = 50000
-        print('connected to: ', self.k2461.query('*IDN?'))
-        # self.k2400.write(':SYST:BEEP:STAT OFF')
-        self.k2461.write(':*RST')
-        self.k2461.write('sour:func curr')
-        self.k2461.write('sens:func "volt"')
-        self.k2461.write('sens:volt:rang:auto on')
-        # self.k2461.write(f'trac:make "defbuffer1", {10000}')
+        print('connected to: ', self.k2461.query('*idn?'))
+        self.k2461.write('*rst')
 
     def prepare_pulsing(self, current, nplc=2):
         self.k2461.write('sens:func "volt"')
@@ -179,32 +174,30 @@ class K2461:
         self.k2461.write(f'sour:curr {current}')
         self.k2461.write('sour:curr:vlim 2')
 
+    def prepare_pulsing_voltage(self, voltage, width, clim=100e-3):
+        self.k2461.write('*rst')
+        # self.k2461.write('sens:curr:rsen off')  # measure 2 wire
+        # self.k2461.write('form:asc:prec 16')  # data precision to 16
+        # self.k2461.write('sens:curr:rang:auto on')
+
+        self.k2461.write(
+            f'sour:puls:swe:volt:lin 0, 0, {voltage}, 2, {width}, off, "defbuffer1", 0, 0, 1, {clim}, {clim}, off, off')
+        self.set_ext_trig()
+
     # sets up and sends a single square wave pulse with duration "width" in seconds and amplitude "current" in Amps
     def pulse_current(self, current, width=1e-3, vlim=30):
         self.k2461.write('sens:volt:rsen off')  # measure 2 wire
-        self.k2461.write(':form:asc:prec 16')  # data precision to 16
+        self.k2461.write('form:asc:prec 16')  # data precision to 16
         # set up pulse waveform
         self.k2461.write(
             f'sour:puls:swe:curr:lin 0, 0, {current}, 2, {width}, off, "defbuffer1", 0, 0, 1, {vlim}, {vlim}, off, off')
         self.k2461.write('init')  # send pulse
         self.k2461.write('*wai')  # queue up following commands instead of activating them instantly
 
-    # sets up and sends a single square wave pulse with duration "width" in second and amplitude "voltage" in Volts
-    def pulse_voltage(self, voltage, width=1e-3, clim=100e-3):
-        # self.k2461.write('sour:func volt')
-        # self.k2461.write('sens:func "curr"')
-        self.k2461.write('sens:curr:rsen off')  # measure 2 wire
-        self.k2461.write(':form:asc:prec 16')  # data precision to 16esigner
-        self.k2461.write('sens:curr:rang:auto on')
-        # set up pulse waveform
-        # :SOURce[1]:PULSe:SWEep:<function>:LINear <biasLevel>, <start>, <stop>, <points>, <pulseWidth>, <measEnable>,
-        # "<bufferName>", <delay>, <offTime>, <count>, <xBiasLimit>, <xPulseLimit>, <failAbort>, <dual>
-        # page 6-110 in ref man
-        self.k2461.write(
-            f'sour:puls:swe:volt:lin 0, 0, {voltage}, 2, {width}, off, "defbuffer1", 0, 0, 1, {clim}, {clim}, off, off')
-        self.k2461.write('*wai') # adding to wait before triggering
+
+    def pulse_voltage(self):
         self.k2461.write('init')  # send pulse
-        self.k2461.write('*wai')  # queue up following commands instead of activating them instantly
+
 
     # sets up a measurement of "num" points with applied probe current of "current" Amps
     def measure_n(self, current, num, nplc=2):
@@ -229,11 +222,11 @@ class K2461:
     # initiates the measurement set up using measure
     def trigger(self):
         # self.k2461.write('init')
-        self.k2461.write(':trac:trig "mybuffer"')
+        self.k2461.write('trac:trig "mybuffer"')
         self.k2461.write('*wai')
 
     def trigger_fetch(self):
-        self.k2461.write(':trac:trig "defbuffer1"')
+        self.k2461.write('trac:trig "defbuffer1"')
         self.k2461.write('*wai')
 
     # reads num data points from the buffer
@@ -281,14 +274,14 @@ class K2461:
 
     # For use with "enable_2_wire_probe" or "enable_4_wire_probe" to read individual values
     def read_one(self):
-        data = np.array([self.k2461.query_ascii_values(':READ? "defbuffer1", sour, read')])
+        data = np.array([self.k2461.query_ascii_values('read? "defbuffer1", sour, read')])
         # print(data)
         cur = data[0][0]
         vol = data[0][1]
         return cur, vol
 
     def fetch_one(self):
-        data = self.k2461.query_ascii_values(':fetch? "defbuffer1", sour, read')
+        data = self.k2461.query_ascii_values('fetch? "defbuffer1", sour, read')
         return data[1], data[0]
 
     # closes connections and allows for a new process to connect
@@ -297,6 +290,14 @@ class K2461:
         self.k2461.write('*sre 0')
         self.k2461.write('outp off')
         self.k2461.close()
+
+    def set_ext_trig(self, pin=3):
+        self.k2461.write(f'dig:line{pin}:mode trig, out')
+        self.k2461.write(f'trig:dig{pin}:out:log pos')
+        self.k2461.write(f'trig:dig{pin}:out:stim NOT1')
+        self.k2461.write('trig:bloc:not 5, 1')
+        self.k2461.write(f'TRIG:DIG{pin}:OUT:PULS 1e-6')
+
 
 
 class K2661:

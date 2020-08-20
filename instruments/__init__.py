@@ -15,4 +15,4 @@ from .redpitaya import *
 from .switchbox import *
 from .sourcemeters import *
 from .temperaturecontrollers import *
-from .sounds import *
+from .oscilloscopes import *
