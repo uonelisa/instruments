@@ -65,7 +65,8 @@ class DataCollector(QtCore.QObject):
                              {"I+": "G", "I-": "C", "V1+": "H", "V1-": "B"},
                              {"I+": "H", "I-": "D", "V1+": "A", "V1-": "C"},
                              )
-    reference_resistance = 2973.5
+    reference_resistance = 10.0154663186062
+    two_wire = 1500
 
     @QtCore.pyqtSlot(str, str, str, str, str, str, str, str, str, tuple)
     def start_measurement(self, mode, sb_port, bb_port, dmm_port, pulse_mag, pulse_width, meas_curr, meas_n, loop_n,
@@ -345,7 +346,7 @@ class DataCollector(QtCore.QObject):
         if scope_enabled & pulse_volts:
             try:
                 self.scope.connect()
-                self.scope.prepare_for_pulse(pulse_mag)
+                self.scope.prepare_for_pulse(pulse_mag, self.reference_resistance, self.two_wire)
                 self.scope.set_trig_chan(3)
                 # self.scope.single_trig()
                 self.scope_enabled = True
