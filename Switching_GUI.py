@@ -37,12 +37,19 @@ class DataCollector(QtCore.QObject):
     pg = instruments.K2461()
     scope = instruments.DS1104()
     scope_enabled = False
-    pulse1_assignments = {"I+": "B", "I-": "F"}  # configuration for a pulse from B to F
-    pulse2_assignments = {"I+": "D", "I-": "H"}  # configuration for a pulse from D to H
-    measure_assignments = {"I+": "A", "I-": "E", "V1+": "B", "V1-": "D", "V2+": "C", "V2-": "G"}  # here V1 is Vxy
+
+    # pulse1_assignments = {"I+": "B", "I-": "F"}  # configuration for a pulse from B to F
+    # pulse2_assignments = {"I+": "D", "I-": "H"}  # configuration for a pulse from D to H
+    # measure_assignments = {"I+": "A", "I-": "E", "V1+": "B", "V1-": "D", "V2+": "C", "V2-": "G"}  # here V1 is Vxy
+
     # pulse1_assignments = {"I+": "A", "I-": "E"}
     # pulse2_assignments = {"I+": "C", "I-": "G"}
     # measure_assignments = {"I+": "H", "I-": "D", "V1+": "A", "V1-": "C", "V2+": "B", "V2-": "F"}
+
+    pulse1_assignments = {"I+": "D", "I-": "H"}  # configuration for a pulse from B to F
+    pulse2_assignments = {"I+": "H", "I-": "D"}  # configuration for a pulse from D to H
+    measure_assignments = {"I+": "A", "I-": "E", "V1+": "B", "V1-": "D", "V2+": "C", "V2-": "G"}  # here V1 is Vxy
+
     resistance_assignments = {'A': 0, 'B': 0, 'C': 0, 'D': 0, 'E': 0, 'F': 0, 'G': 0, 'H': 0}
     two_wire_assignments = ({"I+": "A", "I-": "E"},
                             {"I+": "B", "I-": "F"},
@@ -163,7 +170,7 @@ class DataCollector(QtCore.QObject):
             if self.is_stopped:
                 return
             self.mutex.unlock()
-            print('Loop count: ', loop_count + 1, 'Pulse: 1')
+            print('Loop count:', loop_count + 1, 'Pulse: 1')
             self.sb.switch(self.pulse1_assignments)
             self.pg.set_ext_trig(3)
             if self.scope_enabled:
@@ -205,7 +212,7 @@ class DataCollector(QtCore.QObject):
                 return
             self.mutex.unlock()
 
-            print('Loop count: ', loop_count + 1, 'Pulse: 2')
+            print('Loop count:', loop_count + 1, 'Pulse: 2')
             self.sb.switch(self.pulse2_assignments)
             self.pg.set_ext_trig(3)
             if self.scope_enabled:
