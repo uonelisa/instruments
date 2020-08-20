@@ -25,8 +25,11 @@ def alert_sound():
 class DataCollector(QtCore.QObject):
     finished = QtCore.pyqtSignal()
     pos_data_ready = QtCore.pyqtSignal(np.ndarray, np.ndarray, np.ndarray)
+    pos_scope_data_ready = QtCore.pyqtSignal(np.ndarray, np.ndarray)
     neg_data_ready = QtCore.pyqtSignal(np.ndarray, np.ndarray, np.ndarray)
+    neg_scope_data_ready = QtCore.pyqtSignal(np.ndarray, np.ndarray)
     finished_res_measurement = QtCore.pyqtSignal(np.ndarray, np.ndarray)
+
     mutex = QtCore.QMutex()
     mutex.lock()
     is_stopped = False
@@ -56,6 +59,7 @@ class DataCollector(QtCore.QObject):
                              {"I+": "G", "I-": "C", "V1+": "H", "V1-": "B"},
                              {"I+": "H", "I-": "D", "V1+": "A", "V1-": "C"},
                              )
+    reference_resistance = 2973.5
 
     @QtCore.pyqtSlot(str, str, str, str, str, str, str, str, str, tuple)
     def start_measurement(self, mode, sb_port, bb_port, dmm_port, pulse_mag, pulse_width, meas_curr, meas_n, loop_n,
@@ -92,7 +96,7 @@ class DataCollector(QtCore.QObject):
         # plt.pause()(1)
         self.finished.emit()
 
-    @QtCore.pyqtSlot(str, str,  str, str, str, str, str, str, str, bool)
+    @QtCore.pyqtSlot(str, str, str, str, str, str, str, str, str, bool)
     def resistance_measurement(self, mode, sb_port, bb_port, dmm_port, pulse_mag, pulse_width, meas_curr, meas_n,
                                loop_n, bb_enabled):
         self.mutex.lock()
@@ -101,10 +105,14 @@ class DataCollector(QtCore.QObject):
 
         # Converts the strings in the gui boxes into appropriate types and then connects and sets up instruments.
         error_flag, pulse_volts, pulse_mag, pulse_width, meas_curr, meas_n, loop_n = self.handle_inputs(mode,
-                                                                                           sb_port, bb_port, dmm_port,
-                                                                                           pulse_mag, pulse_width,
-                                                                                           meas_curr, meas_n, loop_n,
-                                                                                           bb_enabled)
+                                                                                                        sb_port,
+                                                                                                        bb_port,
+                                                                                                        dmm_port,
+                                                                                                        pulse_mag,
+                                                                                                        pulse_width,
+                                                                                                        meas_curr,
+                                                                                                        meas_n, loop_n,
+                                                                                                        bb_enabled)
 
         # If something fails to connect, the UI doesn't continue
         if error_flag:
@@ -164,12 +172,14 @@ class DataCollector(QtCore.QObject):
             if volts:
                 self.pg.prepare_pulsing_voltage(pulse_mag, pulse_width)
             time.sleep(0.2)
+            pulse_t = time.time()
             if volts:
                 self.pg.pulse_voltage()
             else:
                 self.pg.pulse_current(pulse_mag, pulse_width)
             time.sleep(200e-3)
             self.sb.switch(self.measure_assignments)
+
             time.sleep(200e-3)
             self.pg.enable_4_wire_probe(meas_curr)
             time.sleep(200e-3)
@@ -188,7 +198,13 @@ class DataCollector(QtCore.QObject):
                 vxx[meas_count], curr[meas_count] = self.pg.fetch_one()
                 vxy[meas_count] = self.dmm.fetch_one()
             self.pg.disable_probe_current()
+
             self.pos_data_ready.emit(t - start_time, vxx / curr, vxy / curr)
+            if self.scope_enabled:
+                scope_data = self.scope.get_data(15001, 30000)
+                time_step = float(self.scope.get_time_inc())
+                scope_time = np.array(range(0, len(scope_data))) * time_step + pulse_t - start_time
+                self.pos_scope_data_ready.emit(scope_time, scope_data / self.reference_resistance)
 
             self.mutex.lock()
             if self.is_stopped:
@@ -201,15 +217,19 @@ class DataCollector(QtCore.QObject):
                 self.scope.single_trig()
             if volts:
                 self.pg.prepare_pulsing_voltage(pulse_mag, pulse_width)
+
             time.sleep(0.2)
+            pulse_t = time.time()
             if volts:
                 self.pg.pulse_voltage()
             else:
                 self.pg.pulse_current(pulse_mag, pulse_width)
+
             time.sleep(200e-3)
             self.sb.switch(self.measure_assignments)
             self.pg.enable_4_wire_probe(meas_curr)
             time.sleep(500e-3)
+
             t = np.zeros(meas_n)
             curr = np.zeros(meas_n)
             vxx = np.zeros(meas_n)
@@ -222,6 +242,12 @@ class DataCollector(QtCore.QObject):
                 vxy[meas_count] = self.dmm.fetch_one()
             self.pg.disable_probe_current()
             self.neg_data_ready.emit(t - start_time, vxx / curr, vxy / curr)
+
+            if self.scope_enabled:
+                scope_data = self.scope.get_data(15001, 30000)
+                time_step = float(self.scope.get_time_inc())
+                scope_time = np.array(range(0, len(scope_data))) * time_step + pulse_t - start_time
+                self.neg_scope_data_ready.emit(scope_time, scope_data / self.reference_resistance)
 
     def handle_inputs(self, mode, sb_port, bb_port, dmm_port, pulse_mag, pulse_width, meas_curr, meas_n, loop_n,
                       bb_enabled, scope_enabled):
@@ -365,10 +391,14 @@ class MyGUI(QtWidgets.QMainWindow):
         self.data_collector.moveToThread(self.thread)
         self.data_collector.finished.connect(self.on_loop_over)
         self.data_collector.pos_data_ready.connect(self.on_pos_data_ready)
+        self.data_collector.pos_scope_data_ready.connect(self.on_pos_scope_data_ready)
         self.data_collector.neg_data_ready.connect(self.on_neg_data_ready)
+        self.data_collector.neg_scope_data_ready.connect(self.on_neg_scope_data_ready)
         self.data_collector.finished_res_measurement.connect(self.on_res_finished)
 
     def on_start(self):
+
+        self.scope_enabled = False
         # Reset the data arrays to not append to previous measurements.
         self.pos_time = np.array([])
         self.neg_time = np.array([])
@@ -376,6 +406,14 @@ class MyGUI(QtWidgets.QMainWindow):
         self.neg_rxx = np.array([])
         self.pos_rxy = np.array([])
         self.neg_rxy = np.array([])
+
+        if self.scope_checkbox.isChecked():
+            self.scope_enabled = True
+            self.pos_scope_time = np.array([])
+            self.pos_scope_data = np.array([])
+            self.neg_scope_time = np.array([])
+            self.neg_scope_data = np.array([])
+
         self.create_plots()  # make figure axes and so on
 
         # maximum of 9 arguments
@@ -389,7 +427,8 @@ class MyGUI(QtWidgets.QMainWindow):
                                         QtCore.Q_ARG(str, self.probe_current_box.text()),
                                         QtCore.Q_ARG(str, self.measurement_count_box.text()),
                                         QtCore.Q_ARG(str, self.loop_count_box.text()),
-                                        QtCore.Q_ARG(tuple, (self.bb_enable_checkbox.isChecked(), self.scope_checkbox.isChecked()))
+                                        QtCore.Q_ARG(tuple, (self.bb_enable_checkbox.isChecked(),
+                                                             self.scope_checkbox.isChecked()))
                                         )
 
     def on_res_measurement(self):
@@ -430,7 +469,19 @@ class MyGUI(QtWidgets.QMainWindow):
         self.rxy_ax.set_ylabel('R_xy (Ohms)')
         self.rxy_ax.ticklabel_format(useOffset=False)
         plt.show(block=False)
-        self.refresh_graphs()
+        self.refresh_switching_graphs()
+
+        if self.scope_enabled:
+            self.scope_fig = plt.figure("scope plots")
+            self.scope_ax = plt.axes()
+            self.scope_ax.clear()
+            self.pos_scope_line, = self.scope_ax.plot(self.pos_scope_time, self.pos_scope_data / 1e3, 'k-')
+            self.neg_scope_line, = self.scope_ax.plot(self.neg_scope_time, self.neg_scope_data / 1e3, 'r-')
+            self.scope_ax.set_xlabel('Time (s)')
+            self.scope_ax.set_ylabel('Pulse Current (mA)')
+            self.scope_ax.ticklabel_format(useOffset=False)
+            self.refresh_scope_graphs()
+            plt.show(block=False)
 
     def on_mode_changed(self, string):
         # Redraw a few things when changing pulse mode.
@@ -477,12 +528,20 @@ class MyGUI(QtWidgets.QMainWindow):
                 if name:  # if a name was entered, don't save otherwise
                     np.savetxt(name, data, newline='\n', delimiter='\t')  # save
                     print(f'Data saved as {name}')
+
+                    if self.scope_enabled:
+                        scope_name = name.split('.')[0] + '_scope.' + name.split('.')[1]
+                        scope_data = np.column_stack(
+                            (self.pos_scope_time, self.pos_scope_data, self.neg_scope_time, self.neg_scope_data))
+                        np.savetxt(scope_name, scope_data, newline='\n', delimiter='\t')  # save scope data
+                        print(f'Scope data saved as {scope_name}')
                 else:
                     print('No Filename: Data not saved')
             else:
                 print('Data not saved')
         except ValueError:
-            print("Could not stack. Please manually combine and save pos_temp_data and neg_temp_data.")
+            print("Could not stack. Please manually combine and save pos_temp_data and neg_temp_data "
+                  "(and scope data if used).")
         except:
             print("Data not saved, something went wrong!")
 
@@ -493,9 +552,18 @@ class MyGUI(QtWidgets.QMainWindow):
         self.pos_rxy = np.append(self.pos_rxy, rxy)
         self.rxx_pos_line.set_data(self.pos_time, self.pos_rxx)
         self.rxy_pos_line.set_data(self.pos_time, self.pos_rxy)
-        self.refresh_graphs()
+        self.refresh_switching_graphs()
         data = np.column_stack((self.pos_time, self.pos_rxx, self.pos_rxy))
         np.savetxt('pos_temp_data.txt', data, newline='\n', delimiter='\t')
+
+    def on_pos_scope_data_ready(self, t, current):
+        print('pos scope data ready')
+        self.pos_scope_time = np.append(self.pos_scope_time, t)
+        self.pos_scope_data = np.append(self.pos_scope_data, current)
+        self.pos_scope_line.set_data(self.pos_scope_time, self.pos_scope_data)
+        self.refresh_scope_graphs()
+        scope_data = np.column_stack((self.pos_scope_time, self.pos_scope_data))
+        np.savetxt('pos_temp_scope_data.txt', scope_data, newline='\n', delimiter='\t')
 
     def on_neg_data_ready(self, t, rxx, rxy):
         # After neg pulse, plot and store the data then save a backup
@@ -504,9 +572,18 @@ class MyGUI(QtWidgets.QMainWindow):
         self.neg_rxy = np.append(self.neg_rxy, rxy)
         self.rxx_neg_line.set_data(self.neg_time, self.neg_rxx)
         self.rxy_neg_line.set_data(self.neg_time, self.neg_rxy)
-        self.refresh_graphs()
+        self.refresh_switching_graphs()
         data = np.column_stack((self.neg_time, self.neg_rxx, self.neg_rxy))
         np.savetxt('neg_temp_data.txt', data, newline='\n', delimiter='\t')
+
+    def on_neg_scope_data_ready(self, t, current):
+        print('neg scope data ready')
+        self.neg_scope_time = np.append(self.neg_scope_time, t)
+        self.neg_scope_data = np.append(self.neg_scope_data, current)
+        self.neg_scope_line.set_data(self.neg_scope_time, self.neg_scope_data)
+        self.refresh_scope_graphs()
+        scope_data = np.column_stack((self.neg_scope_time, self.neg_scope_data))
+        np.savetxt('neg_temp_scope_data.txt', scope_data, newline='\n', delimiter='\t')
 
     def on_res_finished(self, two_wires, four_wires):
         save_window = QtWidgets.QWidget()
@@ -526,13 +603,18 @@ class MyGUI(QtWidgets.QMainWindow):
         else:
             print('No Filename: Data not saved')
 
-    def refresh_graphs(self):
+    def refresh_switching_graphs(self):
         # Simply redraw the axes after changing data.
         self.rxx_ax.relim()
         self.rxx_ax.autoscale_view()
         self.rxy_ax.relim()
         self.rxy_ax.autoscale_view()
         self.graph_fig.canvas.draw()
+
+    def refresh_scope_graphs(self):
+        self.scope_ax.relim()
+        self.scope_ax.autoscale_view()
+        self.scope_fig.canvas.draw()
 
 
 # Starts the application running it's callback loops etc.
