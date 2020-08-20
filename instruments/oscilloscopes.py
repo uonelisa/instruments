@@ -17,7 +17,7 @@ class DS1104:
 
     def prepare_for_pulse(self, pulsev, res, two_wire):
         # lim is 1.2* the predicted voltage across the resistor
-        lim = pulsev * 5 * (res/two_wire)
+        lim = pulsev * 3 * (res/two_wire)
         self.scope.write(f'chan{1}:disp 1')
         self.scope.write(f'chan{1}:prob 1')
         self.scope.write(f'chan{1}:scale {lim / 4}')
