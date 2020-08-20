@@ -187,10 +187,6 @@ class DataCollector(QtCore.QObject):
             vxx = np.zeros(meas_n)
             vxy = np.zeros(meas_n)
             curr = np.zeros(meas_n)
-            # weird bug where first value is higher by some small amount so this ignores first and measures again.
-            # if loop_count == 0:
-            #     self.pg.trigger_fetch()
-            #     self.pg.fetch_one()
             for meas_count in range(meas_n):
                 t[meas_count] = time.time()
                 self.pg.trigger_fetch()
@@ -198,7 +194,6 @@ class DataCollector(QtCore.QObject):
                 vxx[meas_count], curr[meas_count] = self.pg.fetch_one()
                 vxy[meas_count] = self.dmm.fetch_one()
             self.pg.disable_probe_current()
-
             self.pos_data_ready.emit(t - start_time, vxx / curr, vxy / curr)
             if self.scope_enabled:
                 scope_data = self.scope.get_data(15001, 30000)
