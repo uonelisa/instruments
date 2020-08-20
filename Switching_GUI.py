@@ -65,8 +65,10 @@ class DataCollector(QtCore.QObject):
                              {"I+": "G", "I-": "C", "V1+": "H", "V1-": "B"},
                              {"I+": "H", "I-": "D", "V1+": "A", "V1-": "C"},
                              )
-    reference_resistance = 10.0154663186062
+    # reference_resistance = 10.0154663186062
+    reference_resistance = 51
     two_wire = 1500
+
 
     @QtCore.pyqtSlot(str, str, str, str, str, str, str, str, str, tuple)
     def start_measurement(self, mode, sb_port, bb_port, dmm_port, pulse_mag, pulse_width, meas_curr, meas_n, loop_n,
@@ -203,7 +205,7 @@ class DataCollector(QtCore.QObject):
             self.pg.disable_probe_current()
             self.pos_data_ready.emit(t - start_time, vxx / curr, vxy / curr)
             if self.scope_enabled:
-                scope_data = self.scope.get_data(15001, 30000)
+                scope_data = self.scope.get_data(30001, 60000)
                 time_step = float(self.scope.get_time_inc())
                 scope_time = np.array(range(0, len(scope_data))) * time_step + pulse_t - start_time
                 self.pos_scope_data_ready.emit(scope_time, scope_data / self.reference_resistance)
@@ -247,7 +249,7 @@ class DataCollector(QtCore.QObject):
             self.neg_data_ready.emit(t - start_time, vxx / curr, vxy / curr)
 
             if self.scope_enabled:
-                scope_data = self.scope.get_data(15001, 30000)
+                scope_data = self.scope.get_data(30001, 60000)
                 time_step = float(self.scope.get_time_inc())
                 scope_time = np.array(range(0, len(scope_data))) * time_step + pulse_t - start_time
                 self.neg_scope_data_ready.emit(scope_time, scope_data / self.reference_resistance)
@@ -347,7 +349,7 @@ class DataCollector(QtCore.QObject):
             try:
                 self.scope.connect()
                 self.scope.prepare_for_pulse(pulse_mag, self.reference_resistance, self.two_wire)
-                self.scope.set_trig_chan(3)
+                self.scope.set_trig_chan()
                 # self.scope.single_trig()
                 self.scope_enabled = True
                 time.sleep(12)
@@ -479,8 +481,8 @@ class MyGUI(QtWidgets.QMainWindow):
             self.scope_fig = plt.figure("scope plots")
             self.scope_ax = plt.axes()
             self.scope_ax.clear()
-            self.pos_scope_line, = self.scope_ax.plot(self.pos_scope_time, self.pos_scope_data / 1e3, 'k-')
-            self.neg_scope_line, = self.scope_ax.plot(self.neg_scope_time, self.neg_scope_data / 1e3, 'r-')
+            self.pos_scope_line, = self.scope_ax.plot(self.pos_scope_time, self.pos_scope_data / 1e3, 'k.')
+            self.neg_scope_line, = self.scope_ax.plot(self.neg_scope_time, self.neg_scope_data / 1e3, 'r.')
             self.scope_ax.set_xlabel('Time (s)')
             self.scope_ax.set_ylabel('Pulse Current (mA)')
             self.scope_ax.ticklabel_format(useOffset=False)

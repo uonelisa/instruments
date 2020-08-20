@@ -6,7 +6,7 @@ import numpy as np
 
 pg = instruments.K2461()
 pg.connect()
-v_pulse = 15
+v_pulse = 5
 scope = instruments.DS1104()
 scope.connect()
 scope.prepare_for_pulse(v_pulse)
@@ -15,7 +15,7 @@ scope.single_trig()
 
 time.sleep(12)
 
-pg.prepare_pulsing_voltage(v_pulse, 150e-6)
+pg.prepare_pulsing_voltage(v_pulse, 500e-6)
 print("pulse now")
 pg.pulse_voltage()
 

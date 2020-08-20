@@ -13,27 +13,25 @@ class DS1104:
         self.scope.timeout = 50000
         print('connected to: ', self.scope.query('*idn?'))
         self.scope.write('*rst')
-        self.scope.write('acq:mdep 60000')
+
 
     def prepare_for_pulse(self, pulsev, res, two_wire):
         # lim is 1.2* the predicted voltage across the resistor
-        lim = pulsev * 1.2 * (res/two_wire)
+        lim = pulsev * 5 * (res/two_wire)
         self.scope.write(f'chan{1}:disp 1')
         self.scope.write(f'chan{1}:prob 1')
         self.scope.write(f'chan{1}:scale {lim / 4}')
         self.scope.write(f'chan{1}:rang {lim}')
-        self.scope.write(f'chan{2}:disp 1')
-        self.scope.write(f'chan{2}:prob 1')
-        self.scope.write(f'chan{2}:scale {lim / 4}')
-        self.scope.write(f'chan{2}:rang {lim}')
+        self.scope.write('acq:type hres')
+        self.scope.write('acq:mdep 120000')
         self.scope.write('wav:form ascii')
         self.scope.write('wav:mode raw')
         self.scope.write('tim:scal 0.0005')
         self.scope.write('tim:range 0.006')
-        self.scope.write('acq:mdep 60000')
+
 
     # Should probably make this set a bunch of custom stuff
-    def set_trig_chan(self, n=3):
+    def set_trig_chan(self, n=2):
         self.scope.write(f'trig:edg:sour chan{n}')
         self.scope.write(f'chan{n}:prob 1')
         self.scope.write(f'chan{n}:scale 2')
@@ -55,13 +53,7 @@ class DS1104:
         self.scope.write(f'wav:stop {stop}')
         self.scope.write('wav:data?')
         chan1 = np.array(str(self.scope.read())[11:].split(','), dtype=np.float32)
-        self.scope.write(f'wav:sour chan{2}')
-        self.scope.write(f'wav:start {start}')
-        self.scope.write(f'wav:stop {stop}')
-        self.scope.write('wav:data?')
-        chan2 = np.array(str(self.scope.read())[11:].split(','), dtype=np.float32)
-        # [13:-3].split(',')
-        return chan1-chan2
+        return chan1
 
     def get_time_inc(self):
         return self.scope.query('wav:xinc?')
