@@ -38,17 +38,17 @@ class DataCollector(QtCore.QObject):
     scope = instruments.DS1104()
     scope_enabled = False
 
-    # pulse1_assignments = {"I+": "B", "I-": "F"}  # configuration for a pulse from B to F
-    # pulse2_assignments = {"I+": "D", "I-": "H"}  # configuration for a pulse from D to H
-    # measure_assignments = {"I+": "A", "I-": "E", "V1+": "B", "V1-": "D", "V2+": "C", "V2-": "G"}  # here V1 is Vxy
+    pulse1_assignments = {"I+": "B", "I-": "F"}  # configuration for a pulse from B to F
+    pulse2_assignments = {"I+": "D", "I-": "H"}  # configuration for a pulse from D to H
+    measure_assignments = {"I+": "A", "I-": "E", "V1+": "B", "V1-": "D", "V2+": "C", "V2-": "G"}  # here V1 is Vxx
 
     # pulse1_assignments = {"I+": "A", "I-": "E"}
     # pulse2_assignments = {"I+": "C", "I-": "G"}
     # measure_assignments = {"I+": "H", "I-": "D", "V1+": "A", "V1-": "C", "V2+": "B", "V2-": "F"}
 
-    pulse1_assignments = {"I+": "D", "I-": "H"}  # configuration for a pulse from B to F
-    pulse2_assignments = {"I+": "H", "I-": "D"}  # configuration for a pulse from D to H
-    measure_assignments = {"I+": "A", "I-": "E", "V1+": "B", "V1-": "D", "V2+": "C", "V2-": "G"}  # here V1 is Vxy
+    # pulse1_assignments = {"I+": "D", "I-": "H"}  # configuration for a pulse from B to F
+    # pulse2_assignments = {"I+": "H", "I-": "D"}  # configuration for a pulse from D to H
+    # measure_assignments = {"I+": "A", "I-": "E", "V1+": "B", "V1-": "D", "V2+": "C", "V2-": "G"}  # here V1 is Vxx
 
     resistance_assignments = {'A': 0, 'B': 0, 'C': 0, 'D': 0, 'E': 0, 'F': 0, 'G': 0, 'H': 0}
     two_wire_assignments = ({"I+": "A", "I-": "E"},
