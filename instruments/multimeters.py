@@ -17,7 +17,7 @@ class K2000:
         self.k2000.close()
         self.k2000.open()
         self.k2000.baud_rate = 19200
-        self.k2000.timeout = 50000
+        self.k2000.timeout = 10000
         self.k2000.write_termination = '\r\n'
         self.k2000.read_termination = '\r\n'
         self.k2000.write('*rst')
