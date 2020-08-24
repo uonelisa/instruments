@@ -165,7 +165,7 @@ class DataCollector(QtCore.QObject):
         # see footnote on 6-110 in k2461 manual
 
         # todo(stu) add all the code to retrieve and save the oscope data
-        self.dmm.measure_one()
+        self.dmm.prepare_measure_one()
 
         start_time = time.time()
         for loop_count in range(loop_n):
@@ -175,17 +175,18 @@ class DataCollector(QtCore.QObject):
             self.mutex.unlock()
             print('Loop count:', loop_count + 1, 'Pulse: 1')
             self.sb.switch(self.pulse1_assignments)
-            self.pg.set_ext_trig(3)
             if self.scope_enabled:
                 self.scope.single_trig()
             if volts:
                 self.pg.prepare_pulsing_voltage(pulse_mag, pulse_width)
+            else:
+                self.pg.prepare_pulsing_current(pulse_mag, pulse_width)
+            self.pg.set_ext_trig()
             time.sleep(0.2)
             pulse_t = time.time()
-            if volts:
-                self.pg.pulse_voltage()
-            else:
-                self.pg.pulse_current(pulse_mag, pulse_width)
+
+            self.pg.send_pulse()
+
             time.sleep(200e-3)
             self.sb.switch(self.measure_assignments)
 
@@ -217,18 +218,17 @@ class DataCollector(QtCore.QObject):
 
             print('Loop count:', loop_count + 1, 'Pulse: 2')
             self.sb.switch(self.pulse2_assignments)
-            self.pg.set_ext_trig(3)
             if self.scope_enabled:
                 self.scope.single_trig()
             if volts:
                 self.pg.prepare_pulsing_voltage(pulse_mag, pulse_width)
-
+            else:
+                self.pg.prepare_pulsing_current(pulse_mag, pulse_width)
+            self.pg.set_ext_trig()
             time.sleep(0.2)
             pulse_t = time.time()
-            if volts:
-                self.pg.pulse_voltage()
-            else:
-                self.pg.pulse_current(pulse_mag, pulse_width)
+
+            self.pg.send_pulse()
 
             time.sleep(200e-3)
             self.sb.switch(self.measure_assignments)

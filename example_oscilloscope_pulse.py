@@ -17,7 +17,7 @@ time.sleep(12)
 
 pg.prepare_pulsing_voltage(v_pulse, 500e-6)
 print("pulse now")
-pg.pulse_voltage()
+pg.send_pulse()
 
 time.sleep(0.2)
 n = 125000/2

@@ -24,22 +24,8 @@ class K2000:
         self.k2000.write('*cls')
         print('connected to: ', self.k2000.query('*IDN?'))
 
-    # Initiates the measurement set up in measure_n
-    def trigger(self):
-        self.k2000.write('init')
-        self.k2000.write('*wai')
-
-    # reads the data from buffer. For use with measure_n and trigger.
-    def read_buffer(self):
-        # self.k2000.write('form:data ASCII')  #  read doesn't work without this line ?
-        data = self.k2000.query_ascii_values('trac:data?')
-
-        data = np.array(data)
-
-        return data
-
-    # Sets up the instrument ready to measure Rxy given a probe current from a sourcemeter
-    def measure_n(self, num, volt_range=0, nplc=2):
+    # Sets up the instrument ready to measure Rxy given a probe current from a sourcemeter. see trigger
+    def prepare_measure_n(self, num, volt_range=0, nplc=2):
         self.k2000.write('sens:func "volt"')  # measure volts
         self.k2000.write(f'sens:volt:nplc {nplc}')  # level of averaging min, 0.01 -> 10 ish Power line cycle:
         # 50hz 2-> 25hz measurement
@@ -52,23 +38,39 @@ class K2000:
         # self.k2000.write('init')
 
     # sets up measurement for one single values. For use with a source meter to provide current and use
-    # read_one to take readings
-    def measure_one(self, volt_range=0, nplc=2):
+    # read_one to take readings. see trigger
+    def prepare_measure_one(self, volt_range=0, nplc=2):
         self.k2000.write('sens:func "volt"')  # measure volts
         self.k2000.write(f'sens:volt:nplc {nplc}')  # level of averaging min, 0.01 -> 10 ish Power line cycle:
         # 50hz 2-> 25hz measurement
         self.k2000.write(f'sens:volt:rang {volt_range}')  # auto-ranging
 
-    # reads as single value from the k2000. Use after measure_one to read the value.
+    # Initiates the measurement set up in prepare_measure or prepare_measure_one
+    def trigger(self):
+        self.k2000.write('init')
+        self.k2000.write('*wai')
+
+    # reads the data from buffer. For use with prepare_measure_n and trigger.
+    def read_buffer(self):
+        # self.k2000.write('form:data ASCII')  #  read doesn't work without this line ?
+        data = self.k2000.query_ascii_values('trac:data?')
+
+        data = np.array(data)
+
+        return data
+
+    # reads as single value from the k2000. Use after prepare_measure_one to read the value.
     def read_one(self):
         data = np.array([self.k2000.query_ascii_values('sens:data?')])
         return data[0][0]
 
-    # use this after setting up measure_one and then trigger instead of using read_one
+    # use this after setting up prepare_measure_one and trigger instead of using read_one (more synchronous loops)
     def fetch_one(self):
         return self.k2000.query_ascii_values('fetch?')[0]
 
     def close(self):
+        """
+        Closes the instrument connection, i.e. frees the port up for other applications/threads. Also disables output.
+        :return: null
+        """
         self.k2000.close()
-
-    # TODO: Set up k2000 to be able to measure 2 and 4 wire on it's own
