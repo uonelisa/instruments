@@ -26,19 +26,34 @@ class Prologix:
         self.prolog.write('++auto 0')
         self.prolog.write('++eoi 1')
 
-    # Writes a command to the desired object using prologix
+    #
     def write(self, string):
+        """
+        Writes a command to the desired object using prologix
+        :param str string: The message to be sent
+        :return:
+        """
         self.prolog.write(f'++addr {self.address}')
         self.prolog.write(string)
 
-    # reads some data to the desired object using prologix
+    #
     def query_ascii_values(self, string):
+        """
+        sends a command to the lockin and reads some data to the desired object using prologix
+        :param str string:
+        :return:
+        """
         self.prolog.write(f'++addr {self.address}')
         self.prolog.write(string)
         return self.prolog.query_ascii_values('++read eoi')
 
-    # Is supposed to read data but seems broken
+
     def query(self, string):
+        """
+        # Is supposed to read data after sending a command but seems broken
+        :param str string:
+        :return:
+        """
         self.prolog.write(f'++addr {self.address}')
         self.prolog.write(string)
         return self.prolog.query('++read eoi')
