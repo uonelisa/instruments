@@ -1,9 +1,20 @@
 import visa
+import struct
 
 __all__ = ['TEC1089SV']
 
-
 class TEC1089SV:
+    """
+    All commands take the form #<address><sequence number><payload data><CRC16 checksum>
+    the self.address class member contains both # and the 02 for address as shorthand
+    and the payload data takes one of the following forms
+    <operation><param id><instance><new value> for writing a value
+    <operation><param id><instance> for reading a value
+    <operation><instance> for a parameter less operation (e.g ?IF or ES)
+    Everything is in ascii representation of hex (0-9,A-F) with no lowercase or extraneous characters.
+    All error codes from the device contain a "+" followed by error code 00-09
+    """
+
     def __init__(self):
         self.CRC16_XMODEM_TABLE = [
             0x0000, 0x1021, 0x2042, 0x3063, 0x4084, 0x50a5, 0x60c6, 0x70e7,
@@ -39,6 +50,8 @@ class TEC1089SV:
             0xef1f, 0xff3e, 0xcf5d, 0xdf7c, 0xaf9b, 0xbfba, 0x8fd9, 0x9ff8,
             0x6e17, 0x7e36, 0x4e55, 0x5e74, 0x2e93, 0x3eb2, 0x0ed1, 0x1ef0,
         ]
+        self.msg_counter = 0
+        self.address = '#02'
 
     def connect(self, port):
         rm = visa.ResourceManager('@ni')
@@ -49,52 +62,190 @@ class TEC1089SV:
         self.tec.timeout = 10000
         self.tec.write_termination = '\r'
         self.tec.read_termination = '\r'
+        print(self.get_indentity())
+        self.set_int32_param(108, 1)  # don't save data to flash
+        self.set_int32_param(50010, 1)  # ramp start point setting
+
+    def stop(self):
+        start = self.address
+        seq = self.param_hex(self.msg_counter)
+        self.msg_counter += 1
+        op = 'ES'
+        msg = start + seq + op
+        response = self.tec.query(msg + self.crc16(msg.encode()))
+        if '+' not in response:
+            return response[7:-4]
+        else:
+            print('Failed to set value/read response with message:\n')
+            print(response)
+
+    def close(self):
+        self.tec.close()
+
+    def get_object_temperature(self):
+        return self.hex_float32(self.get_param(1000))
+
+    def get_sink_temperature(self):
+        return self.hex_float32(self.get_param(1001))
+
+    def get_target_temperature(self):
+        return self.hex_float32(self.get_param(3000))
+
+    def get_output_current(self):
+        return self.hex_float32(self.get_param(1020))
+
+    def get_output_voltage(self):
+        return self.hex_float32(self.get_param(1021))
+
+    def set_target_temperature(self, target):
+        return self.set_float32_param(3000, float(target))
+
+    def get_temp_stability_state(self):
+        states = {0: 'off', 1: 'unstable', 2: 'stable'}
+        return states[self.hex_int(self.get_param(1200))]
+
+    def enable_control(self):
+        """
+        Enables temperature control. Use set_target_temperature first.
+        :return:
+        """
+        return self.set_int32_param(2010, 1)
+
+    def disable_control(self):
+        """
+        Disables temperature control
+        :return:
+        """
+        return self.set_int32_param(2010, 0)
+
+    def get_indentity(self):
+        """
+        Reads the identity information from the instrument for printing on connect.
+        :return:
+        """
+        start = self.address
+        seq = self.param_hex(self.msg_counter)
+        self.msg_counter += 1
+        op = '?IF'
+        msg = start + seq + op
+        response = self.tec.query(msg + self.crc16(msg.encode()))
+        if '+' not in response:
+            return response[7:-4]
+        else:
+            print('Failed to set value/read response with message:\n')
+            print(response)
+        # 00ABCD?IF
+
+    def get_param(self, param):
+        """
+
+        :param int param: parameter ID
+        :return: The message between the preamble and the checksum or None
+        """
+        start = self.address
+        seq = self.param_hex(self.msg_counter)
+        self.msg_counter += 1
+        op = '?VR'
+        param = self.param_hex(param)
+        instance = '01'
+        msg = start + seq + op + param + instance
+        response = self.tec.query(msg + self.crc16(msg.encode()))
+        if '+' not in response:
+            return response[7:-4]
+        else:
+            print('Failed to set value/read response with message:\n')
+            print(response)
+
+    def set_int32_param(self, param, value):
+        """
+
+        :param param:
+        :param value:
+        :return:
+        """
+        start = self.address
+        seq = self.param_hex(self.msg_counter)
+        self.msg_counter += 1
+        op = 'VS'
+        param = self.param_hex(param)
+        instance = '01'
+        val = self.int32_hex(value)
+        msg = start + seq + op + param + instance + val
+        response = self.tec.query(msg + self.crc16(msg.encode()))
+        if '+' not in response:
+            return response[7:-4]
+        else:
+            print('Failed to set value/read response with message:\n')
+            print(response)
+
+    def set_float32_param(self, param, value):
+        """
+
+        :param int param:
+        :param float value:
+        :return:
+        """
+        start = self.address
+        seq = self.param_hex(self.msg_counter)
+        self.msg_counter += 1
+        op = 'VS'
+        param = self.param_hex(param)
+        instance = '01'
+        val = self.float32_hex(value)
+        msg = start + seq + op + param + instance + val
+        response = self.tec.query(msg + self.crc16(msg.encode()))
+        if '+' not in response:
+            return response[7:-4]
+        else:
+            print('Failed to set value/read response with message:\n')
+            print(response)
+
+    def param_hex(self, param):
+        """
+        Converts parameter number into hex form for use in queries etc.
+        :param int param: the parameter number to be converted into hex
+        :return: the hex form of the parameter number in 2byte format with no 0x prefix
+        """
+        return f"{param:04X}"
+
+    def int32_hex(self, value):
+        """
+        Convert int32 to hex for transmission to device
+        :param int32 value: The value to be converted into a 32bit hex value
+        :return: The string form of the hex with no 0x prefix, 8 characters long.
+        """
+        return f"{value:08X}"
+
+    def hex_int(self, hex_str):
+        """
+        Convert hex string from instrument into int32 (might not work with UInts above a large number)
+        :param str hex_str:
+        :return: integer from hex
+        """
+        return int(hex_str, 16)
+
+    def float32_hex(self, value):
+        """
+        Convert a python float to a hex string for sending to the device
+        :param float value: value to be converted into float
+        :return: hex string without 0x prefix
+        """
+        return hex(struct.unpack('<I', struct.pack('<f', value))[0]).lstrip('0x').upper()
+
+    def hex_float32(self, hex_str):
+        """
+        Convert hex output from device into usable numbers
+        :param str hex_str: ascii hex representation of float to be converted
+        :return: the float in double precision
+        """
+        return struct.unpack('!f', bytes.fromhex(hex_str))[0]
 
     def crc16(self, data):
-        crc = 0
-        """Calculate CRC16 using the given table.
-        `data`      - data for calculating CRC, must be bytes
-        `crc`       - initial value
-        `table`     - table for caclulating CRC (list of 256 integers)
-        Return calculated value of CRC
+        """Calculate checksum using CRC16 (standard)
+        :param string data: the entire message without CRC (inc the '#' at the start)
+        :return: Return calculated value of CRC
         """
+        crc = 0
         for byte in data:
             crc = ((crc << 8) & 0xFF00) ^ self.CRC16_XMODEM_TABLE[((crc >> 8) & 0xFF) ^ byte]
         return '%X' % (crc & 0xFFFF)
-
-
-    def query(self, msg):
-        crc = self.crc16(msg.encode())
-        print(msg)
-        print(crc)
-        print(msg + crc)
-        return self.tec.query(msg + crc)[7:-4]
-
-
-    # TODO:
-    # change the display mode on connect:
-    #  Curr: TTC  Targ: TTC
-    #  V:volts V  A: amps A
-    # Also change the V and A limits on boot 2030, 2031, 2032, 2033, are Clim Vlim Cerr Verr
-    # Configure PT100
-    # To read a value:
-    # #0015AC?VR<ID>01<checksum>
-    # To write a value:
-    # #0015AE?VS<ID>01<newvalue><checksum>
-    # The 01 is the channel to set it to. Only one channel so always 01.
-    #
-    # Start auto tuning
-    # add set/get target temp ID 3000
-    # add set/get P, I and D and damping 3010, 3011, 3012, 3013
-    # add function to wait until temperature is stable (ID 1200)
-    # Get object current temp 1000. 1045 is ssame but different?
-    # Get sink temp: 1001
-    # Read all errors 105, 106, 107?
-    # Get actual output current 1090?
-    # Get actual Output A or V 1020 or 1021
-    # Emergency stop: ES
-
-    # Input selection 0 static CV, 1 live CV, 2 Temp controller
-    # Start/stop output 2010, 0 off, 1 on, 2 live off/on, 3 HW enable?
-
-
