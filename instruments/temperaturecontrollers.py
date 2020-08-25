@@ -16,7 +16,7 @@ class TEC1089SV:
     """
 
     def __init__(self):
-        self.CRC16_XMODEM_TABLE = [
+        self.__CRC16_XMODEM_TABLE = [
             0x0000, 0x1021, 0x2042, 0x3063, 0x4084, 0x50a5, 0x60c6, 0x70e7,
             0x8108, 0x9129, 0xa14a, 0xb16b, 0xc18c, 0xd1ad, 0xe1ce, 0xf1ef,
             0x1231, 0x0210, 0x3273, 0x2252, 0x52b5, 0x4294, 0x72f7, 0x62d6,
@@ -50,29 +50,29 @@ class TEC1089SV:
             0xef1f, 0xff3e, 0xcf5d, 0xdf7c, 0xaf9b, 0xbfba, 0x8fd9, 0x9ff8,
             0x6e17, 0x7e36, 0x4e55, 0x5e74, 0x2e93, 0x3eb2, 0x0ed1, 0x1ef0,
         ]
-        self.msg_counter = 0
-        self.address = '#02'
+        self.__msg_counter = 0
+        self.__address = '#02'
 
     def connect(self, port):
         rm = visa.ResourceManager('@ni')
-        self.tec = rm.open_resource(f'COM{port}', baud_rate=19200)
-        self.tec.close()
-        self.tec.open()
-        self.tec.baud_rate = 57600
-        self.tec.timeout = 10000
-        self.tec.write_termination = '\r'
-        self.tec.read_termination = '\r'
-        print(self.get_indentity())
-        self.set_int32_param(108, 1)  # don't save data to flash
-        self.set_int32_param(50010, 1)  # ramp start point setting
+        self.__tec = rm.open_resource(f'COM{port}', baud_rate=19200)
+        self.__tec.close()
+        self.__tec.open()
+        self.__tec.baud_rate = 57600
+        self.__tec.timeout = 10000
+        self.__tec.write_termination = '\r'
+        self.__tec.read_termination = '\r'
+        print(self.get_identity())
+        self.__set_int32_param(108, 1)  # don't save data to flash
+        self.__set_int32_param(50010, 1)  # ramp start point setting
 
     def stop(self):
-        start = self.address
-        seq = self.param_hex(self.msg_counter)
-        self.msg_counter += 1
+        start = self.__address
+        seq = self.__param_hex(self.__msg_counter)
+        self.__msg_counter += 1
         op = 'ES'
         msg = start + seq + op
-        response = self.tec.query(msg + self.crc16(msg.encode()))
+        response = self.__tec.query(msg + self.__crc16(msg.encode()))
         if '+' not in response:
             return response[7:-4]
         else:
@@ -80,55 +80,55 @@ class TEC1089SV:
             print(response)
 
     def close(self):
-        self.tec.close()
+        self.__tec.close()
 
     def get_object_temperature(self):
-        return self.hex_float32(self.get_param(1000))
+        return self.__hex_float32(self.__get_param(1000))
 
     def get_sink_temperature(self):
-        return self.hex_float32(self.get_param(1001))
+        return self.__hex_float32(self.__get_param(1001))
 
     def get_target_temperature(self):
-        return self.hex_float32(self.get_param(3000))
+        return self.__hex_float32(self.__get_param(3000))
 
     def get_output_current(self):
-        return self.hex_float32(self.get_param(1020))
+        return self.__hex_float32(self.__get_param(1020))
 
     def get_output_voltage(self):
-        return self.hex_float32(self.get_param(1021))
+        return self.__hex_float32(self.__get_param(1021))
 
     def set_target_temperature(self, target):
-        return self.set_float32_param(3000, float(target))
+        return self.__set_float32_param(3000, float(target))
 
     def get_temp_stability_state(self):
         states = {0: 'off', 1: 'unstable', 2: 'stable'}
-        return states[self.hex_int(self.get_param(1200))]
+        return states[self.__hex_int(self.__get_param(1200))]
 
     def enable_control(self):
         """
         Enables temperature control. Use set_target_temperature first.
         :return:
         """
-        return self.set_int32_param(2010, 1)
+        return self.__set_int32_param(2010, 1)
 
     def disable_control(self):
         """
         Disables temperature control
         :return:
         """
-        return self.set_int32_param(2010, 0)
+        return self.__set_int32_param(2010, 0)
 
-    def get_indentity(self):
+    def get_identity(self):
         """
         Reads the identity information from the instrument for printing on connect.
         :return:
         """
-        start = self.address
-        seq = self.param_hex(self.msg_counter)
-        self.msg_counter += 1
+        start = self.__address
+        seq = self.__param_hex(self.__msg_counter)
+        self.__msg_counter += 1
         op = '?IF'
         msg = start + seq + op
-        response = self.tec.query(msg + self.crc16(msg.encode()))
+        response = self.__tec.query(msg + self.__crc16(msg.encode()))
         if '+' not in response:
             return response[7:-4]
         else:
@@ -136,71 +136,71 @@ class TEC1089SV:
             print(response)
         # 00ABCD?IF
 
-    def get_param(self, param):
+    def __get_param(self, param):
         """
 
         :param int param: parameter ID
         :return: The message between the preamble and the checksum or None
         """
-        start = self.address
-        seq = self.param_hex(self.msg_counter)
-        self.msg_counter += 1
+        start = self.__address
+        seq = self.__param_hex(self.__msg_counter)
+        self.__msg_counter += 1
         op = '?VR'
-        param = self.param_hex(param)
+        param = self.__param_hex(param)
         instance = '01'
         msg = start + seq + op + param + instance
-        response = self.tec.query(msg + self.crc16(msg.encode()))
+        response = self.__tec.query(msg + self.__crc16(msg.encode()))
         if '+' not in response:
             return response[7:-4]
         else:
             print('Failed to set value/read response with message:\n')
             print(response)
 
-    def set_int32_param(self, param, value):
+    def __set_int32_param(self, param, value):
         """
 
         :param param:
         :param value:
         :return:
         """
-        start = self.address
-        seq = self.param_hex(self.msg_counter)
-        self.msg_counter += 1
+        start = self.__address
+        seq = self.__param_hex(self.__msg_counter)
+        self.__msg_counter += 1
         op = 'VS'
-        param = self.param_hex(param)
+        param = self.__param_hex(param)
         instance = '01'
-        val = self.int32_hex(value)
+        val = self.__int32_hex(value)
         msg = start + seq + op + param + instance + val
-        response = self.tec.query(msg + self.crc16(msg.encode()))
+        response = self.__tec.query(msg + self.__crc16(msg.encode()))
         if '+' not in response:
             return response[7:-4]
         else:
             print('Failed to set value/read response with message:\n')
             print(response)
 
-    def set_float32_param(self, param, value):
+    def __set_float32_param(self, param, value):
         """
 
         :param int param:
         :param float value:
         :return:
         """
-        start = self.address
-        seq = self.param_hex(self.msg_counter)
-        self.msg_counter += 1
+        start = self.__address
+        seq = self.__param_hex(self.__msg_counter)
+        self.__msg_counter += 1
         op = 'VS'
-        param = self.param_hex(param)
+        param = self.__param_hex(param)
         instance = '01'
-        val = self.float32_hex(value)
+        val = self.__float32_hex(value)
         msg = start + seq + op + param + instance + val
-        response = self.tec.query(msg + self.crc16(msg.encode()))
+        response = self.__tec.query(msg + self.__crc16(msg.encode()))
         if '+' not in response:
             return response[7:-4]
         else:
             print('Failed to set value/read response with message:\n')
             print(response)
 
-    def param_hex(self, param):
+    def __param_hex(self, param):
         """
         Converts parameter number into hex form for use in queries etc.
         :param int param: the parameter number to be converted into hex
@@ -208,7 +208,7 @@ class TEC1089SV:
         """
         return f"{param:04X}"
 
-    def int32_hex(self, value):
+    def __int32_hex(self, value):
         """
         Convert int32 to hex for transmission to device
         :param int32 value: The value to be converted into a 32bit hex value
@@ -216,7 +216,7 @@ class TEC1089SV:
         """
         return f"{value:08X}"
 
-    def hex_int(self, hex_str):
+    def __hex_int(self, hex_str):
         """
         Convert hex string from instrument into int32 (might not work with UInts above a large number)
         :param str hex_str:
@@ -224,7 +224,7 @@ class TEC1089SV:
         """
         return int(hex_str, 16)
 
-    def float32_hex(self, value):
+    def __float32_hex(self, value):
         """
         Convert a python float to a hex string for sending to the device
         :param float value: value to be converted into float
@@ -232,7 +232,7 @@ class TEC1089SV:
         """
         return hex(struct.unpack('<I', struct.pack('<f', value))[0]).lstrip('0x').upper()
 
-    def hex_float32(self, hex_str):
+    def __hex_float32(self, hex_str):
         """
         Convert hex output from device into usable numbers
         :param str hex_str: ascii hex representation of float to be converted
@@ -240,12 +240,12 @@ class TEC1089SV:
         """
         return struct.unpack('!f', bytes.fromhex(hex_str))[0]
 
-    def crc16(self, data):
+    def __crc16(self, data):
         """Calculate checksum using CRC16 (standard)
         :param string data: the entire message without CRC (inc the '#' at the start)
         :return: Return calculated value of CRC
         """
         crc = 0
         for byte in data:
-            crc = ((crc << 8) & 0xFF00) ^ self.CRC16_XMODEM_TABLE[((crc >> 8) & 0xFF) ^ byte]
+            crc = ((crc << 8) & 0xFF00) ^ self.__CRC16_XMODEM_TABLE[((crc >> 8) & 0xFF) ^ byte]
         return '%X' % (crc & 0xFFFF)
