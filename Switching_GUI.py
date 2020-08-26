@@ -392,6 +392,9 @@ class MyGUI(QtWidgets.QMainWindow):
         self.start_button.clicked.connect(self.on_start)
         self.start_res_button.clicked.connect(self.on_res_measurement)
         self.stop_button.clicked.connect(self.on_stop)
+        self.temperature_control_combo.currentIndexChanged.connect(self.on_temp_control_changed)
+        self.temperature_control_button.clicked.connect(self.on_temp_start_stop)
+        self.temp_running = False
         self.thread = QtCore.QThread()
         self.data_collector = DataCollector()
         self.data_collector.moveToThread(self.thread)
@@ -401,6 +404,11 @@ class MyGUI(QtWidgets.QMainWindow):
         self.data_collector.neg_data_ready.connect(self.on_neg_data_ready)
         self.data_collector.neg_scope_data_ready.connect(self.on_neg_scope_data_ready)
         self.data_collector.finished_res_measurement.connect(self.on_res_finished)
+        self.temperature_cont_box.hide()
+        self.temperature_label.hide()
+        self.temperature_units_label.hide()
+        self.temperature_control_button.hide()
+
 
     def on_start(self):
 
@@ -608,6 +616,27 @@ class MyGUI(QtWidgets.QMainWindow):
             print(f'Four wires data saved as {name_four_wires}')
         else:
             print('No Filename: Data not saved')
+
+    def on_temp_control_changed(self, mode):
+        if mode == 1 or mode == 2:
+            self.temperature_cont_box.show()
+            self.temperature_label.show()
+            self.temperature_units_label.show()
+            self.temperature_control_button.show()
+        else:
+            self.temperature_cont_box.hide()
+            self.temperature_label.hide()
+            self.temperature_units_label.hide()
+            self.temperature_control_button.hide()
+
+    def on_temp_start_stop(self):
+        # todo(stu): Need to implement temperature control
+        self.temp_running = not self.temp_running
+        if self.temp_running:
+            self.temperature_control_button.set_text("Stop Temperature Control")
+        else:
+            self.temperature_control_button.set_text("Start Temperature Control")
+
 
     def refresh_switching_graphs(self):
         # Simply redraw the axes after changing data.
