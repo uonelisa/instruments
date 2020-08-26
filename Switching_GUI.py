@@ -13,7 +13,6 @@ from PyQt5 import QtCore, QtWidgets, uic
 
 matplotlib.use('Qt5Agg')
 
-
 error_sound = instruments.error_sound
 alert_sound = instruments.alert_sound
 
@@ -25,6 +24,7 @@ class DataCollector(QtCore.QObject):
     neg_data_ready = QtCore.pyqtSignal(np.ndarray, np.ndarray, np.ndarray)
     neg_scope_data_ready = QtCore.pyqtSignal(np.ndarray, np.ndarray)
     finished_res_measurement = QtCore.pyqtSignal(np.ndarray, np.ndarray)
+    stable = QtCore.pyqtSignal()
 
     mutex = QtCore.QMutex()
     mutex.lock()
@@ -36,6 +36,8 @@ class DataCollector(QtCore.QObject):
     dmm = instruments.K2000()
     pg = instruments.K2461()
     scope = instruments.DS1104()
+    tec = instruments.TEC1089SV()
+
     scope_enabled = False
 
     pulse1_assignments = {"I+": "B", "I-": "F"}  # configuration for a pulse from B to F
@@ -68,7 +70,6 @@ class DataCollector(QtCore.QObject):
     # reference_resistance = 10.0154663186062
     reference_resistance = 51
     two_wire = 1500
-
 
     @QtCore.pyqtSlot(str, str, str, str, str, str, str, str, str, tuple)
     def start_measurement(self, mode, sb_port, bb_port, dmm_port, pulse_mag, pulse_width, meas_curr, meas_n, loop_n,
@@ -160,6 +161,50 @@ class DataCollector(QtCore.QObject):
         self.pg.close()
         self.sb.close()
         self.finished_res_measurement.emit(two_wires, four_wires)
+
+    @QtCore.pyqtSlot(int, str, str)
+    def start_TEC_temperature_control(self, system, port, target):
+        # System: 0 -> none, 1-> TEC 2-> anything else, for future (HTS?)
+        if system == 0:
+            return
+        try:
+            port = int(port)
+            target = float(target)
+        except ValueError:
+            print('Failed to convert strings to numbers. Check port and target temp boxes')
+            return
+        if system == 1:
+            try:
+                print('Connected to: ' + self.tec.connect(port))
+                self.tec.set_target_temperature(target)
+                self.tec.enable_control()
+            except visa.VisaIOError:
+                print(f'Could not connect to TEC on port {port} or could not set temperature to {target}')
+                self.stable.emit()
+                return
+
+            a = ""
+            while a is not "stable":
+                time.sleep(5)
+                a = self.tec.get_temp_stability_state()
+            self.stable.emit()
+        # if system == 2:
+        #     try:
+        #         self.hts.connect(port)
+        #         self.hts.set_target_temperature(target)
+        #         self.hts.enable_control()
+        #     except visa.VisaIOError:
+        #         print('Could not connect to HTS on port ' + port + ' or could not set temperature to ' + target)
+        #         return
+
+
+    @QtCore.pyqtSlot()
+    def stop_TEC_temperature_control(self):
+        try:
+            self.tec.disable_control()
+        except visa.VisaIOError:
+            print('Could not send disable output command to TEC')
+        self.tec.close()
 
     def pulse_and_measure(self, volts, pulse_mag, pulse_width, meas_curr, meas_n, loop_n):
         # see footnote on 6-110 in k2461 manual
@@ -376,6 +421,7 @@ class DataCollector(QtCore.QObject):
 
         return connection_flag or conversion_flag, pulse_volts, pulse_mag, pulse_width, meas_curr, meas_n, loop_n
 
+
 # TODO: I need to figure out how to make the tabbing order of the boxes in the gui consistent with vertical placement.
 #  Currently it jumps around from top to middle, to bottom and back to 2nd then 4th then the next box.
 class MyGUI(QtWidgets.QMainWindow):
@@ -385,6 +431,7 @@ class MyGUI(QtWidgets.QMainWindow):
         self.show()  # Show the GUI
         self.connect_signals()  # this also creates a new thread.
         self.thread.start()  # start the thread created in "connect_signals()"
+        self.temp_running = False
 
     def connect_signals(self):
         # Connect gui elements to slots.
@@ -394,7 +441,6 @@ class MyGUI(QtWidgets.QMainWindow):
         self.stop_button.clicked.connect(self.on_stop)
         self.temperature_control_combo.currentIndexChanged.connect(self.on_temp_control_changed)
         self.temperature_control_button.clicked.connect(self.on_temp_start_stop)
-        self.temp_running = False
         self.thread = QtCore.QThread()
         self.data_collector = DataCollector()
         self.data_collector.moveToThread(self.thread)
@@ -404,11 +450,13 @@ class MyGUI(QtWidgets.QMainWindow):
         self.data_collector.neg_data_ready.connect(self.on_neg_data_ready)
         self.data_collector.neg_scope_data_ready.connect(self.on_neg_scope_data_ready)
         self.data_collector.finished_res_measurement.connect(self.on_res_finished)
-        self.temperature_cont_box.hide()
-        self.temperature_label.hide()
-        self.temperature_units_label.hide()
-        self.temperature_control_button.hide()
-
+        self.data_collector.stable.connect(self.on_stable)
+        self.temperature_cont_target_box.setDisabled(True)
+        self.temperature_label.setDisabled(True)
+        self.temperature_units_label.setDisabled(True)
+        self.temperature_control_button.setDisabled(True)
+        self.temperature_control_port_box.setDisabled(True)
+        self.tc_port_label.setDisabled(True)
 
     def on_start(self):
 
@@ -618,25 +666,42 @@ class MyGUI(QtWidgets.QMainWindow):
             print('No Filename: Data not saved')
 
     def on_temp_control_changed(self, mode):
-        if mode == 1 or mode == 2:
-            self.temperature_cont_box.show()
-            self.temperature_label.show()
-            self.temperature_units_label.show()
-            self.temperature_control_button.show()
+        if mode == 0:
+            self.temperature_cont_target_box.setDisabled(True)
+            self.temperature_label.setDisabled(True)
+            self.temperature_units_label.setDisabled(True)
+            self.temperature_control_button.setDisabled(True)
+            self.temperature_control_port_box.setDisabled(True)
+            self.tc_port_label.setDisabled(True)
+            self.start_button.setDisabled(False)
         else:
-            self.temperature_cont_box.hide()
-            self.temperature_label.hide()
-            self.temperature_units_label.hide()
-            self.temperature_control_button.hide()
+            self.temperature_cont_target_box.setDisabled(False)
+            self.temperature_label.setDisabled(False)
+            self.temperature_units_label.setDisabled(False)
+            self.temperature_control_button.setDisabled(False)
+            self.temperature_control_port_box.setDisabled(False)
+            self.tc_port_label.setDisabled(False)
+            self.start_button.setDisabled(True)
 
     def on_temp_start_stop(self):
-        # todo(stu): Need to implement temperature control
+        # todo(stu): Need to implement temperature readback in measure loop
         self.temp_running = not self.temp_running
         if self.temp_running:
-            self.temperature_control_button.set_text("Stop Temperature Control")
+            self.temperature_control_button.setText("Stop Temperature Control")
+            self.start_button.setDisabled(True)
+            QtCore.QMetaObject.invokeMethod(self.data_collector, 'start_TEC_temperature_control',
+                                            QtCore.Qt.QueuedConnection,
+                                            QtCore.Q_ARG(int, self.temperature_control_combo.currentIndex()),
+                                            QtCore.Q_ARG(str, self.temperature_control_port_box.text()),
+                                            QtCore.Q_ARG(str, self.temperature_cont_target_box.text()))
         else:
-            self.temperature_control_button.set_text("Start Temperature Control")
+            self.temperature_control_button.setText("Start Temperature Control")
+            QtCore.QMetaObject.invokeMethod(self.data_collector, 'stop_TEC_temperature_control',
+                                            QtCore.Qt.QueuedConnection)
+            self.start_button.setDisabled(False)
 
+    def on_stable(self):
+        self.start_button.setDisabled(False)
 
     def refresh_switching_graphs(self):
         # Simply redraw the axes after changing data.

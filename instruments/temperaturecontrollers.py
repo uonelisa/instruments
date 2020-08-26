@@ -62,9 +62,10 @@ class TEC1089SV:
         self.__tec.timeout = 10000
         self.__tec.write_termination = '\r'
         self.__tec.read_termination = '\r'
-        print(self.get_identity())
+        print()
         self.__set_int32_param(108, 1)  # don't save data to flash
         self.__set_int32_param(50010, 1)  # ramp start point setting
+        return self.get_identity()
 
     def stop(self):
         start = self.__address
