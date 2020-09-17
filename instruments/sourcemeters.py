@@ -234,7 +234,6 @@ class K2461:
         :return:
         """
         self.k2461.write('*rst')
-
         self.k2461.write(
             f'sour:puls:swe:volt:lin 0, 0, {voltage}, 2, {width}, off, "defbuffer1", 0, 0, 1, {clim}, {clim}, off, off')
         self.set_ext_trig()
@@ -259,7 +258,6 @@ class K2461:
                     scope (default 3). The script will work without a scope connected, of course.
         :return:
         """
-
         # todo(stu) figure out how to avoid the k2461 warning about pulse width.
         self.k2461.write(f'dig:line{pin}:mode trig, out')
         self.k2461.write(f'trig:dig{pin}:out:log pos')
