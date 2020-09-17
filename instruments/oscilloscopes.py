@@ -19,13 +19,14 @@ class DS1104:
         print('connected to: ', self.scope.query('*idn?'))
         self.scope.write('*rst')
 
-    def prepare_for_pulse(self, pulsev, res, two_wire):
+    def prepare_for_pulse(self, pulsev, res, two_wire, pulse_width):
         """
         Sets the limits/scale of channel 1 to be appropriate for measuring the pulse by predicting V drop across a
         shunt resistor. Max pulse width is ~2ms in these settings
-        :param pulsev: float, voltage of applied pulse in V
-        :param res: float, resistance of the shunt resistor in ohms
-        :param two_wire: float, rough resistance of the device in ohms
+        :param float pulsev: float, voltage of applied pulse in V
+        :param float res: float, resistance of the shunt resistor in ohms
+        :param float two_wire: float, rough resistance of the device in ohms
+        :param float pulse_width: duration of pulse. adjusts scope t axis
         :return: null
         """
         lim = pulsev * 3 * (res / two_wire)
@@ -37,8 +38,12 @@ class DS1104:
         self.scope.write('acq:mdep 120000')
         self.scope.write('wav:form ascii')
         self.scope.write('wav:mode raw')
-        self.scope.write('tim:scal 0.0005')
-        self.scope.write('tim:range 0.006')
+        if pulse_width > 0.3e-6:
+            scale = 0.0005
+        else:
+            scale = 0.0002
+        self.scope.write(f'tim:scal {scale}')
+        # self.scope.write('tim:range 0.003')
 
     # Should probably make this set a bunch of custom stuff
     def set_trig_chan(self, chan=2):
