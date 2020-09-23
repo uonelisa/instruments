@@ -19,7 +19,7 @@ class DS1104:
         print('connected to: ', self.scope.query('*idn?'))
         self.scope.write('*rst')
 
-    def prepare_for_pulse(self, pulsev, res, two_wire, pulse_width):
+    def prepare_for_pulse(self, pulsev, res, two_wire, pulse_width, mdepth=120000):
         """
         Sets the limits/scale of channel 1 to be appropriate for measuring the pulse by predicting V drop across a
         shunt resistor. Max pulse width is ~2ms in these settings
@@ -35,7 +35,7 @@ class DS1104:
         self.scope.write(f'chan{1}:scale {lim / 4}')
         self.scope.write(f'chan{1}:rang {lim}')
         self.scope.write('acq:type hres')
-        self.scope.write('acq:mdep 120000')
+        self.scope.write(f'acq:mdep {mdepth}')
         self.scope.write('wav:form ascii')
         self.scope.write('wav:mode raw')
         if pulse_width > 0.3e-6:
@@ -47,7 +47,7 @@ class DS1104:
 
 
 
-    def prepare_for_4channel_pulse(self, pulsev, res, two_wire, pulse_width):
+    def prepare_for_4channel_pulse(self, pulsev, res, two_wire, pulse_width, mdepth=300000 ):
         """
         Sets the limits/scale of channel 1 to be appropriate for measuring the pulse by predicting V drop across a
         shunt resistor. Max pulse width is ~2ms in these settings
@@ -59,19 +59,19 @@ class DS1104:
         """
         lim = pulsev * 3 * (res / two_wire)
         self.scope.write(f'chan{1}:disp 1')
-        self.scope.write(f'chan{1}:prob 1')
+        self.scope.write(f'chan{1}:prob 10')
         self.scope.write(f'chan{1}:scale {lim / 4}')
         self.scope.write(f'chan{1}:rang {lim}')
         self.scope.write(f'chan{2}:disp 1')
-        self.scope.write(f'chan{2}:prob 1')
-        self.scope.write(f'chan{2}:scale {lim / 4}')
+        self.scope.write(f'chan{2}:prob 10')
+        self.scope.write(f'chan{2}:scale {lim * 4}')
         self.scope.write(f'chan{2}:rang {lim}')
         self.scope.write(f'chan{3}:disp 1')
-        self.scope.write(f'chan{3}:prob 1')
-        self.scope.write(f'chan{3}:scale {lim / 4}')
+        self.scope.write(f'chan{3}:prob 10')
+        self.scope.write(f'chan{3}:scale {lim * 4}')
         self.scope.write(f'chan{3}:rang {lim}')
         self.scope.write('acq:type hres')
-        self.scope.write('acq:mdep 120000')
+        self.scope.write(f'acq:mdep {mdepth}')
         self.scope.write('wav:form ascii')
         self.scope.write('wav:mode raw')
         if pulse_width > 0.3e-6:
