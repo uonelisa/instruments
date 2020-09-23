@@ -68,7 +68,7 @@ class DataCollector(QtCore.QObject):
                              {"I+": "H", "I-": "D", "V1+": "A", "V1-": "C"},
                              )
     # reference_resistance = 10.0154663186062
-    reference_resistance = 51
+    reference_resistance = 50.036
     two_wire = 1500
 
     @QtCore.pyqtSlot(str, str, str, str, str, str, str, str, str, tuple)
@@ -122,7 +122,8 @@ class DataCollector(QtCore.QObject):
                                                                                                         pulse_width,
                                                                                                         meas_curr,
                                                                                                         meas_n, loop_n,
-                                                                                                        bb_enabled)
+                                                                                                        bb_enabled,
+                                                                                                        False)
 
         # If something fails to connect, the UI doesn't continue
         if error_flag:
@@ -227,17 +228,15 @@ class DataCollector(QtCore.QObject):
             else:
                 self.pg.prepare_pulsing_current(pulse_mag, pulse_width)
             self.pg.set_ext_trig()
-            time.sleep(0.2)
+            time.sleep(200e-3)
             pulse_t = time.time()
 
             self.pg.send_pulse()
 
             time.sleep(200e-3)
             self.sb.switch(self.measure_assignments)
-
-            time.sleep(200e-3)
             self.pg.enable_4_wire_probe(meas_curr)
-            time.sleep(200e-3)
+            time.sleep(500e-3)
             t = np.zeros(meas_n)
             vxx = np.zeros(meas_n)
             vxy = np.zeros(meas_n)
@@ -270,7 +269,7 @@ class DataCollector(QtCore.QObject):
             else:
                 self.pg.prepare_pulsing_current(pulse_mag, pulse_width)
             self.pg.set_ext_trig()
-            time.sleep(0.2)
+            time.sleep(200e-3)
             pulse_t = time.time()
 
             self.pg.send_pulse()
@@ -393,7 +392,7 @@ class DataCollector(QtCore.QObject):
         if scope_enabled & pulse_volts:
             try:
                 self.scope.connect()
-                self.scope.prepare_for_pulse(pulse_mag, self.reference_resistance, self.two_wire)
+                self.scope.prepare_for_pulse(pulse_mag, self.reference_resistance, self.two_wire, pulse_width)
                 self.scope.set_trig_chan()
                 # self.scope.single_trig()
                 self.scope_enabled = True
@@ -589,6 +588,7 @@ class MyGUI(QtWidgets.QMainWindow):
                 name, _ = QtWidgets.QFileDialog.getSaveFileName(save_window, "Save Data", "",
                                                                 "Text Files (*.txt);; Data Files (*.dat);; All Files (*)")
                 if name:  # if a name was entered, don't save otherwise
+                    name = name.replace('_scope', '')
                     np.savetxt(name, data, newline='\n', delimiter='\t')  # save
                     print(f'Data saved as {name}')
 
@@ -620,10 +620,9 @@ class MyGUI(QtWidgets.QMainWindow):
         np.savetxt('pos_temp_data.txt', data, newline='\n', delimiter='\t')
 
     def on_pos_scope_data_ready(self, t, current):
-        print('pos scope data ready')
         self.pos_scope_time = np.append(self.pos_scope_time, t)
         self.pos_scope_data = np.append(self.pos_scope_data, current)
-        self.pos_scope_line.set_data(self.pos_scope_time, self.pos_scope_data)
+        self.pos_scope_line.set_data(t, current*1e3)
         self.refresh_scope_graphs()
         scope_data = np.column_stack((self.pos_scope_time, self.pos_scope_data))
         np.savetxt('pos_temp_scope_data.txt', scope_data, newline='\n', delimiter='\t')
@@ -640,10 +639,9 @@ class MyGUI(QtWidgets.QMainWindow):
         np.savetxt('neg_temp_data.txt', data, newline='\n', delimiter='\t')
 
     def on_neg_scope_data_ready(self, t, current):
-        print('neg scope data ready')
         self.neg_scope_time = np.append(self.neg_scope_time, t)
         self.neg_scope_data = np.append(self.neg_scope_data, current)
-        self.neg_scope_line.set_data(self.neg_scope_time, self.neg_scope_data)
+        self.pos_scope_line.set_data(t, current*1e3)
         self.refresh_scope_graphs()
         scope_data = np.column_stack((self.neg_scope_time, self.neg_scope_data))
         np.savetxt('neg_temp_scope_data.txt', scope_data, newline='\n', delimiter='\t')
@@ -655,6 +653,7 @@ class MyGUI(QtWidgets.QMainWindow):
         if name:  # if a name was entered, don't save otherwise
             name = name.replace('_2wires', '')
             name = name.replace('_4wires', '')
+
             name_two_wires = name.replace('.txt', '_2wires.txt')
             np.savetxt(name_two_wires, two_wires, newline='\n', delimiter='\t')  # save
             print(f'Two wires data saved as {name_two_wires}')
