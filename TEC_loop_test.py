@@ -8,7 +8,6 @@ tec = instruments.TEC1089SV()
 
 print(tec.connect(14))
 tec.set_target_temperature(21)
-a =
 n = 10
 temp = np.zeros(n)
 t = np.zeros(n)
