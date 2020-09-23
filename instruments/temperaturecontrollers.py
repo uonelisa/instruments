@@ -59,7 +59,7 @@ class TEC1089SV:
         self.__tec.close()
         self.__tec.open()
         self.__tec.baud_rate = 57600
-        self.__tec.timeout = 10000
+        self.__tec.timeout = 5000
         self.__tec.write_termination = '\r'
         self.__tec.read_termination = '\r'
         print()
@@ -145,12 +145,13 @@ class TEC1089SV:
         """
         start = self.__address
         seq = self.__param_hex(self.__msg_counter)
-        self.__msg_counter += 1
+        # self.__msg_counter += 1
         op = '?VR'
         param = self.__param_hex(param)
         instance = '01'
         msg = start + seq + op + param + instance
         response = self.__tec.query(msg + self.__crc16(msg.encode()))
+        print(msg + self.__crc16(msg.encode()))
         if '+' not in response:
             return response[7:-4]
         else:
