@@ -187,7 +187,7 @@ class DataCollector(QtCore.QObject):
                 self.stable.emit()
                 return
 
-            a = ""
+            a = self.tec.get_temp_stability_state()
             while a is not "stable":
                 time.sleep(1)
                 a = self.tec.get_temp_stability_state()
@@ -289,15 +289,19 @@ class DataCollector(QtCore.QObject):
             time.sleep(500e-3)
 
             t = np.zeros(meas_n)
-            curr = np.zeros(meas_n)
             vxx = np.zeros(meas_n)
             vxy = np.zeros(meas_n)
+            curr = np.zeros(meas_n)
+            if self.tec_enabled:
+                tec_data = np.zeros(meas_n)
             for meas_count in range(meas_n):
                 t[meas_count] = time.time()
                 self.pg.trigger_fetch()
                 self.dmm.trigger()
                 vxx[meas_count], curr[meas_count] = self.pg.fetch_one()
                 vxy[meas_count] = self.dmm.fetch_one()
+                if self.tec_enabled:
+                    tec_data[meas_count] = self.tec.get_object_temperature()
             self.pg.disable_probe_current()
             self.neg_data_ready.emit(t - start_time, vxx / curr, vxy / curr)
 
@@ -306,6 +310,8 @@ class DataCollector(QtCore.QObject):
                 time_step = float(self.scope.get_time_inc())
                 scope_time = np.array(range(0, len(scope_data))) * time_step + pulse_t - start_time
                 self.neg_scope_data_ready.emit(scope_time, scope_data / self.reference_resistance)
+            if self.tec_enabled:
+                self.neg_tec_data_ready.emit(t-start_time, tec_data)
 
     def handle_inputs(self, mode, sb_port, bb_port, dmm_port, pulse_mag, pulse_width, meas_curr, meas_n, loop_n,
                       bb_enabled, scope_enabled):
