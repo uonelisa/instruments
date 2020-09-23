@@ -151,7 +151,6 @@ class TEC1089SV:
         instance = '01'
         msg = start + seq + op + param + instance
         response = self.__tec.query(msg + self.__crc16(msg.encode()))
-        print(msg + self.__crc16(msg.encode()))
         if '+' not in response:
             return response[7:-4]
         else:
