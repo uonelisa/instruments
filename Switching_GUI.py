@@ -21,8 +21,10 @@ class DataCollector(QtCore.QObject):
     finished = QtCore.pyqtSignal()
     pos_data_ready = QtCore.pyqtSignal(np.ndarray, np.ndarray, np.ndarray)
     pos_scope_data_ready = QtCore.pyqtSignal(np.ndarray, np.ndarray)
+    pos_tec_data_ready = QtCore.pyqtSignal(np.ndarray, np.ndarray)
     neg_data_ready = QtCore.pyqtSignal(np.ndarray, np.ndarray, np.ndarray)
     neg_scope_data_ready = QtCore.pyqtSignal(np.ndarray, np.ndarray)
+    neg_tec_data_ready = QtCore.pyqtSignal(np.ndarray, np.ndarray)
     finished_res_measurement = QtCore.pyqtSignal(np.ndarray, np.ndarray)
     stable = QtCore.pyqtSignal()
 
@@ -166,6 +168,7 @@ class DataCollector(QtCore.QObject):
     @QtCore.pyqtSlot(int, str, str)
     def start_TEC_temperature_control(self, system, port, target):
         # System: 0 -> none, 1-> TEC 2-> anything else, for future (HTS?)
+        self.tec_enabled = True
         if system == 0:
             return
         try:
@@ -186,7 +189,7 @@ class DataCollector(QtCore.QObject):
 
             a = ""
             while a is not "stable":
-                time.sleep(5)
+                time.sleep(1)
                 a = self.tec.get_temp_stability_state()
             self.stable.emit()
         # if system == 2:
@@ -201,6 +204,7 @@ class DataCollector(QtCore.QObject):
 
     @QtCore.pyqtSlot()
     def stop_TEC_temperature_control(self):
+        self.tec_enabled = False
         try:
             self.tec.disable_control()
         except visa.VisaIOError:
@@ -210,7 +214,6 @@ class DataCollector(QtCore.QObject):
     def pulse_and_measure(self, volts, pulse_mag, pulse_width, meas_curr, meas_n, loop_n):
         # see footnote on 6-110 in k2461 manual
 
-        # todo(stu) add all the code to retrieve and save the oscope data
         self.dmm.prepare_measure_one()
 
         start_time = time.time()
@@ -241,12 +244,16 @@ class DataCollector(QtCore.QObject):
             vxx = np.zeros(meas_n)
             vxy = np.zeros(meas_n)
             curr = np.zeros(meas_n)
+            if self.tec_enabled:
+                tec_data = np.zeros(meas_n)
             for meas_count in range(meas_n):
                 t[meas_count] = time.time()
                 self.pg.trigger_fetch()
                 self.dmm.trigger()
                 vxx[meas_count], curr[meas_count] = self.pg.fetch_one()
                 vxy[meas_count] = self.dmm.fetch_one()
+                if self.tec_enabled:
+                    tec_data[meas_count] = self.tec.get_object_temperature()
             self.pg.disable_probe_current()
             self.pos_data_ready.emit(t - start_time, vxx / curr, vxy / curr)
             if self.scope_enabled:
@@ -254,6 +261,8 @@ class DataCollector(QtCore.QObject):
                 time_step = float(self.scope.get_time_inc())
                 scope_time = np.array(range(0, len(scope_data))) * time_step + pulse_t - start_time
                 self.pos_scope_data_ready.emit(scope_time, scope_data / self.reference_resistance)
+            if self.tec_enabled:
+                self.pos_tec_data_ready.emit(t-start_time, tec_data)
 
             self.mutex.lock()
             if self.is_stopped:
@@ -446,8 +455,10 @@ class MyGUI(QtWidgets.QMainWindow):
         self.data_collector.finished.connect(self.on_loop_over)
         self.data_collector.pos_data_ready.connect(self.on_pos_data_ready)
         self.data_collector.pos_scope_data_ready.connect(self.on_pos_scope_data_ready)
+        self.data_collector.pos_tec_data_ready.connect(self.on_pos_tec_data_ready)
         self.data_collector.neg_data_ready.connect(self.on_neg_data_ready)
         self.data_collector.neg_scope_data_ready.connect(self.on_neg_scope_data_ready)
+        self.data_collector.neg_tec_data_ready.connect(self.on_neg_tec_data_ready)
         self.data_collector.finished_res_measurement.connect(self.on_res_finished)
         self.data_collector.stable.connect(self.on_stable)
         self.temperature_cont_target_box.setDisabled(True)
@@ -474,6 +485,12 @@ class MyGUI(QtWidgets.QMainWindow):
             self.pos_scope_data = np.array([])
             self.neg_scope_time = np.array([])
             self.neg_scope_data = np.array([])
+
+        if self.temp_running:
+            self.pos_tec_time = np.array([])
+            self.pos_tec_data = np.array([])
+            self.neg_tec_time = np.array([])
+            self.neg_tec_data = np.array([])
 
         self.create_plots()  # make figure axes and so on
 
@@ -543,6 +560,17 @@ class MyGUI(QtWidgets.QMainWindow):
             self.scope_ax.ticklabel_format(useOffset=False)
             self.refresh_scope_graphs()
             plt.show(block=False)
+        if self.temp_running:
+            self.tec_fig = plt.figure("tec plots")
+            self.tec_ax = plt.axes()
+            self.tec_ax.clear()
+            self.pos_tec_line, = self.tec_ax.plot(self.pos_tec_time, self.pos_tec_data, 'k.')
+            self.neg_tec_line, = self.tec_ax.plot(self.neg_tec_time, self.neg_tec_data, 'r.')
+            self.tec_ax.set_xlabel('Time (s)')
+            self.tec_ax.set_ylabel('Temperature (°C)')
+            self.tec_ax.ticklabel_format(useOffset=False)
+            self.refresh_tec_graphs()
+            plt.show(block=False)
 
     def on_mode_changed(self, string):
         # Redraw a few things when changing pulse mode.
@@ -589,6 +617,7 @@ class MyGUI(QtWidgets.QMainWindow):
                                                                 "Text Files (*.txt);; Data Files (*.dat);; All Files (*)")
                 if name:  # if a name was entered, don't save otherwise
                     name = name.replace('_scope', '')
+                    name = name.replace('_tec', '')
                     np.savetxt(name, data, newline='\n', delimiter='\t')  # save
                     print(f'Data saved as {name}')
 
@@ -598,6 +627,12 @@ class MyGUI(QtWidgets.QMainWindow):
                             (self.pos_scope_time, self.pos_scope_data, self.neg_scope_time, self.neg_scope_data))
                         np.savetxt(scope_name, scope_data, newline='\n', delimiter='\t')  # save scope data
                         print(f'Scope data saved as {scope_name}')
+                    if self.temp_running:
+                        tec_name = name.split('.')[0] + '_tec.' + name.split('.')[1]
+                        tec_data = np.column_stack(
+                            (self.pos_tec_time, self.pos_tec_data, self.neg_tec_time, self.neg_tec_data))
+                        np.savetxt(tec_name, tec_data, newline='\n', delimiter='\t')  # save tec data
+                        print(f'tec data saved as {tec_name}')
                 else:
                     print('No Filename: Data not saved')
             else:
@@ -627,6 +662,14 @@ class MyGUI(QtWidgets.QMainWindow):
         scope_data = np.column_stack((self.pos_scope_time, self.pos_scope_data))
         np.savetxt('pos_temp_scope_data.txt', scope_data, newline='\n', delimiter='\t')
 
+    def on_pos_tec_data_ready(self, t, temp):
+        self.pos_tec_time = np.append(self.pos_tec_time, t)
+        self.pos_tec_data = np.append(self.pos_tec_data, temp)
+        self.pos_tec_line.set_data(t, temp)
+        self.refresh_tec_graphs()
+        tec_data = np.column_stack((self.pos_tec_time, self.pos_tec_data))
+        np.savetxt('pos_temp_tec_data.txt', tec_data, newline='\n', delimiter='\t')
+
     def on_neg_data_ready(self, t, rxx, rxy):
         # After neg pulse, plot and store the data then save a backup
         self.neg_time = np.append(self.neg_time, t)
@@ -645,6 +688,14 @@ class MyGUI(QtWidgets.QMainWindow):
         self.refresh_scope_graphs()
         scope_data = np.column_stack((self.neg_scope_time, self.neg_scope_data))
         np.savetxt('neg_temp_scope_data.txt', scope_data, newline='\n', delimiter='\t')
+
+    def on_neg_tec_data_ready(self, t, temp):
+        self.neg_tec_time = np.append(self.neg_tec_time, t)
+        self.neg_tec_data = np.append(self.neg_tec_data, temp)
+        self.neg_tec_line.set_data(t, temp)
+        self.refresh_tec_graphs()
+        tec_data = np.column_stack((self.neg_tec_time, self.neg_tec_data))
+        np.savetxt('neg_temp_tec_data.txt', tec_data, newline='\n', delimiter='\t')
 
     def on_res_finished(self, two_wires, four_wires):
         save_window = QtWidgets.QWidget()
@@ -700,6 +751,7 @@ class MyGUI(QtWidgets.QMainWindow):
             self.start_button.setDisabled(False)
 
     def on_stable(self):
+        print('Temperature about stable. Verify on controller screen before proceeding.')
         self.start_button.setDisabled(False)
 
     def refresh_switching_graphs(self):
@@ -714,6 +766,11 @@ class MyGUI(QtWidgets.QMainWindow):
         self.scope_ax.relim()
         self.scope_ax.autoscale_view()
         self.scope_fig.canvas.draw()
+
+    def refresh_tec_graphs(self):
+        self.tec_ax.relim()
+        self.tec_ax.autoscale_view()
+        self.tec_fig.canvas.draw()
 
 
 # Starts the application running it's callback loops etc.
