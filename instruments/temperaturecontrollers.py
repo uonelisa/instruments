@@ -63,10 +63,11 @@ class TEC1089SV:
         self.__tec.timeout = 5000
         self.__tec.write_termination = '\r'
         self.__tec.read_termination = '\r'
-        print()
         self.__set_int32_param(108, 1)  # don't save data to flash
-        self.__set_int32_param(50010, 1)  # ramp start point setting
-        return self.get_identity()
+        # self.__set_int32_param(50010, 1)  # ramp start point setting
+        instr_id = self.get_identity()
+        print("connected to: " + instr_id)
+        return instr_id
 
     def stop(self):
         start = self.__address
@@ -99,12 +100,18 @@ class TEC1089SV:
     def get_output_voltage(self):
         return self.__hex_float32(self.__get_param(1021))
 
-    def set_target_temperature(self, target):
-        return self.__set_float32_param(3000, float(target))
+    def get_ramp_rate(self):
+        return self.__hex_float32(self.__get_param(3003))
 
     def get_temp_stability_state(self):
         states = {0: 'off', 1: 'unstable', 2: 'stable'}
         return states[self.__hex_int(self.__get_param(1200))]
+
+    def set_target_temperature(self, target):
+        return self.__set_float32_param(3000, float(target))
+
+    def set_ramp_rate(self, rate):
+        return self.__set_float32_param(3003, float(rate))
 
     def enable_control(self):
         """
@@ -127,7 +134,7 @@ class TEC1089SV:
         """
         start = self.__address
         seq = self.__param_hex(self.__msg_counter)
-        self.__msg_counter= (self.__msg_counter + 1) % 65535
+        self.__msg_counter = (self.__msg_counter + 1) % 65535
         op = '?IF'
         msg = start + seq + op
         response = self.__tec.query(msg + self.__crc16(msg.encode()))
