@@ -41,37 +41,53 @@ class DataCollector(QtCore.QObject):
     tec = instruments.TEC1089SV()
 
     scope_enabled = False
-
-    pulse1_assignments = {"I+": "B", "I-": "F"}  # configuration for a pulse from B to F
-    pulse2_assignments = {"I+": "D", "I-": "H"}  # configuration for a pulse from D to H
-    measure_assignments = {"I+": "A", "I-": "E", "V1+": "B", "V1-": "D", "V2+": "C", "V2-": "G"}  # here V1 is Vxx
-
+    # default 8 arms
+    # pulse1_assignments = {"I+": "B", "I-": "F"}  # configuration for a pulse from B to F
+    # pulse2_assignments = {"I+": "D", "I-": "H"}  # configuration for a pulse from D to H
+    # measure_assignments = {"I+": "A", "I-": "E", "V1+": "B", "V1-": "D", "V2+": "C", "V2-": "G"}  # here V1 is Vxx
+    # alt 1 8 arms
     # pulse1_assignments = {"I+": "A", "I-": "E"}
     # pulse2_assignments = {"I+": "C", "I-": "G"}
     # measure_assignments = {"I+": "H", "I-": "D", "V1+": "A", "V1-": "C", "V2+": "B", "V2-": "F"}
-
+    # alt 2 8 arms
     # pulse1_assignments = {"I+": "D", "I-": "H"}  # configuration for a pulse from B to F
     # pulse2_assignments = {"I+": "H", "I-": "D"}  # configuration for a pulse from D to H
     # measure_assignments = {"I+": "A", "I-": "E", "V1+": "B", "V1-": "D", "V2+": "C", "V2-": "G"}  # here V1 is Vxx
+    # default 4 arms
+    pulse1_assignments = {"I+": "AG", "I-": "CE"}  # configuration for a pulse from B to F
+    pulse2_assignments = {"I+": "AC", "I-": "GE"}  # configuration for a pulse from D to H
+    measure_assignments = {"I+": "A", "I-": "E", "V1+": "A", "V1-": "E", "V2+": "C", "V2-": "G"}  # here V1 is Vxx
+
 
     resistance_assignments = {'A': 0, 'B': 0, 'C': 0, 'D': 0, 'E': 0, 'F': 0, 'G': 0, 'H': 0}
+    # 8 arm
+    # two_wire_assignments = ({"I+": "A", "I-": "E"},
+    #                         {"I+": "B", "I-": "F"},
+    #                         {"I+": "C", "I-": "G"},
+    #                         {"I+": "D", "I-": "H"},
+    #                         )
+    # four_wire_assignments = ({"I+": "A", "I-": "E", "V1+": "B", "V1-": "D"},
+    #                          {"I+": "B", "I-": "F", "V1+": "C", "V1-": "E"},
+    #                          {"I+": "C", "I-": "G", "V1+": "D", "V1-": "F"},
+    #                          {"I+": "D", "I-": "H", "V1+": "E", "V1-": "G"},
+    #                          {"I+": "E", "I-": "A", "V1+": "F", "V1-": "H"},
+    #                          {"I+": "F", "I-": "B", "V1+": "G", "V1-": "A"},
+    #                          {"I+": "G", "I-": "C", "V1+": "H", "V1-": "B"},
+    #                          {"I+": "H", "I-": "D", "V1+": "A", "V1-": "C"},
+    #                          )
+    # 4 arm
     two_wire_assignments = ({"I+": "A", "I-": "E"},
-                            {"I+": "B", "I-": "F"},
-                            {"I+": "C", "I-": "G"},
-                            {"I+": "D", "I-": "H"},
+                            {"I+": "C", "I-": "G"}
                             )
-    four_wire_assignments = ({"I+": "A", "I-": "E", "V1+": "B", "V1-": "D"},
-                             {"I+": "B", "I-": "F", "V1+": "C", "V1-": "E"},
-                             {"I+": "C", "I-": "G", "V1+": "D", "V1-": "F"},
-                             {"I+": "D", "I-": "H", "V1+": "E", "V1-": "G"},
-                             {"I+": "E", "I-": "A", "V1+": "F", "V1-": "H"},
-                             {"I+": "F", "I-": "B", "V1+": "G", "V1-": "A"},
-                             {"I+": "G", "I-": "C", "V1+": "H", "V1-": "B"},
-                             {"I+": "H", "I-": "D", "V1+": "A", "V1-": "C"},
+    four_wire_assignments = ({"I+": "A", "I-": "C", "V1+": "G", "V1-": "E"},
+                             {"I+": "C", "I-": "E", "V1+": "A", "V1-": "G"},
+                             {"I+": "E", "I-": "G", "V1+": "C", "V1-": "A"},
+                             {"I+": "G", "I-": "A", "V1+": "E", "V1-": "C"}
                              )
+
     # reference_resistance = 10.0154663186062
     reference_resistance = 50.036
-    two_wire = 1500
+    two_wire = 150
 
     @QtCore.pyqtSlot(str, str, str, str, str, str, str, str, str, tuple)
     def start_measurement(self, mode, sb_port, bb_port, dmm_port, pulse_mag, pulse_width, meas_curr, meas_n, loop_n,
@@ -179,7 +195,7 @@ class DataCollector(QtCore.QObject):
             return
         if system == 1:
             try:
-                print('Connected to: ' + self.tec.connect(port))
+                self.tec.connect(port)
                 self.tec.set_target_temperature(target)
                 self.tec.enable_control()
             except visa.VisaIOError:
@@ -671,7 +687,7 @@ class MyGUI(QtWidgets.QMainWindow):
     def on_pos_tec_data_ready(self, t, temp):
         self.pos_tec_time = np.append(self.pos_tec_time, t)
         self.pos_tec_data = np.append(self.pos_tec_data, temp)
-        self.pos_tec_line.set_data(t, temp)
+        self.pos_tec_line.set_data(self.pos_tec_time, self.pos_tec_data)
         self.refresh_tec_graphs()
         tec_data = np.column_stack((self.pos_tec_time, self.pos_tec_data))
         np.savetxt('pos_temp_tec_data.txt', tec_data, newline='\n', delimiter='\t')
@@ -698,7 +714,7 @@ class MyGUI(QtWidgets.QMainWindow):
     def on_neg_tec_data_ready(self, t, temp):
         self.neg_tec_time = np.append(self.neg_tec_time, t)
         self.neg_tec_data = np.append(self.neg_tec_data, temp)
-        self.neg_tec_line.set_data(t, temp)
+        self.neg_tec_line.set_data(self.neg_tec_time, self.neg_tec_data)
         self.refresh_tec_graphs()
         tec_data = np.column_stack((self.neg_tec_time, self.neg_tec_data))
         np.savetxt('neg_temp_tec_data.txt', tec_data, newline='\n', delimiter='\t')
