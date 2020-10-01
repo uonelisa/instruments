@@ -28,14 +28,17 @@ class SwitchBox:
     # would connect a to V1+ and B to V1-.
     def switch(self, assignments):
         self.reset_all()
-        # This funky stuff allows multiple inputs to be connected to a single sample pin such as when measureing rxx
+        # This funky stuff allows multiple inputs to be connected to a single sample pin such as when measuring rxx
         # and rxy by sharing a pin
-        for key, out_pin in assignments.items():
-            keys = [k for (k, v) in assignments.items() if v == out_pin]
+        for key, out_pins in assignments.items():
+            keys = [k for (k, v) in assignments.items() if v == out_pins]
             in_pins = sum(self.binary_dictionary[pin] for pin in keys)
             in_pin_hex = hex(in_pins)[2::].zfill(2)
-            self.sb.write(bytes.fromhex(self.start_byte + self.binary_dictionary[out_pin] +
-                                        in_pin_hex + self.stop_byte))
+            out_pin_binary = 0
+            for pin in out_pins:
+                self.sb.write(bytes.fromhex(self.start_byte + self.binary_dictionary[pin] +
+                                            in_pin_hex + self.stop_byte))
+
         self.refresh()
 
     def refresh(self):

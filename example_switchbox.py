@@ -7,10 +7,12 @@ import matplotlib
 import instruments
 
 switchbox = instruments.SwitchBox()
-
-pulse1_assignments = {"I+": "B", "I-": "F"}
+#dual arm pulsing
+pulse1_assignments = {"I+": "BD", "I-": "FH"}
+# single arm pulsing
 pulse2_assignments = {"I+": "D", "I-": "H"}
-measure_assignments = {"V1+": "C", "V1-": "G", "V2+": "B", "V2-": "D", "I+": "A", "I-": "E"}
+# measuring with two different kiethley connectors to one pin
+measure_assignments = {"I+": "A", "I-": "E", "V1+": "A", "V1-": "E", "V2+": "C", "V2-": "G"}
 
 switchbox.connect(4)
 
