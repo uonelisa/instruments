@@ -116,6 +116,7 @@ class DS1104:
         :return: np.ndarray, raw y data from the scope
         """
         self.scope.write(f'stop')
+        time.sleep(0.2)
         self.scope.write(f'wav:sour chan{chan}')
         self.scope.write(f'wav:start {start}')
         self.scope.write(f'wav:stop {stop}')
