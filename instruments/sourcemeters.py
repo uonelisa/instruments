@@ -2,7 +2,7 @@ import visa
 import numpy as np
 import time
 
-__all__ = ['K2400', 'K2401', 'K2461', 'K2661']
+__all__ = ['K2400', 'K2401', 'K2461', 'K6221']
 
 
 class K2400:
@@ -410,7 +410,7 @@ class K2461:
         self.k2461.close()
 
 
-class K2661:
+class K6221:
 
     def connect(self, port):
         """
@@ -443,6 +443,12 @@ class K2661:
         self.k2661.write(f'SOUR:WAVE:FREQ {hz}')
         self.k2661.write(f'SOUR:WAVE:AMPL {ma * 1e-3}')
         self.k2661.write('SOUR:WAVE:ARM')
+
+    def set_phase_marker(self, enable=1, phase=0, pin=4):
+        self.k2661.write(f'SOUR:WAVE:PMARK:OLIN {pin}')
+        self.k2661.write(f'SOUR:WAVE:PMARK:LEV {phase}')
+        self.k2661.write(f'SOUR:WAVE:PMARK:STAT {enable}')
+
 
     # Current in mA and Freq in Hz duty in %
     def square_wave(self, hz, ma, duty=50):

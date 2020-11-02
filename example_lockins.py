@@ -3,7 +3,7 @@ import time
 
 lockinA = instruments.Model_5210()
 lockinB = instruments.Model_5210()
-ac = instruments.K2661()
+ac = instruments.K6221()
 
 lockinA.connect(6)
 lockinB.connect(9)
