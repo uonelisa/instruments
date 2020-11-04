@@ -464,13 +464,13 @@ class K6221:
         self.k2661.write(f'SOUR:WAVE:FREQ {hz}')
         self.k2661.write(f'SOUR:WAVE:AMPL {ma * 1e-3}')
         self.k2661.write(f'SOUR:WAVE:DCYC {duty}')
-        self.k2661.write('SOUR:WAVE:ARM')
 
     def wave_output_on(self):
         """
         Enables the output for the wave prepared using sine_wave or square_wave
         :return:
         """
+        self.k2661.write('SOUR:WAVE:ARM')
         self.k2661.write('SOUR:WAVE:INIT')
 
     def wave_output_off(self):
