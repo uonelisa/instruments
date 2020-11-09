@@ -59,6 +59,10 @@ class K2000:
 
         return data
 
+    def measure_one(self):
+        data = np.array([self.k2000.query_ascii_values('meas?')])
+        return data[0][0]
+
     # reads as single value from the k2000. Use after prepare_measure_one to read the value.
     def read_one(self):
         data = np.array([self.k2000.query_ascii_values('sens:data?')])
