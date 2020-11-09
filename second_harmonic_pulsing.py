@@ -8,17 +8,23 @@ import tkinter as tk
 import tkinter.messagebox as mb
 from tkinter import filedialog as dialog
 
-voltage = 1
+voltage = 12.5
 width = 1e-3
 
-num_points = 100
-num_loops = 2
+num_points = 500
+num_loops = 1
 current = 2
-frequency = 1000
+frequency = 1005
 
-pulse1_assignments = {"I+": "A", "I-": "E"}  # configuration for a pulse from B to F
-pulse2_assignments = {"I+": "E", "I-": "A"}  # configuration for a pulse from D to H
-measure_assignments = {"I+": "A", "I-": "E", "V1+": "A", "V1-": "E", "V2+": "C", "V2-": "G"}
+# pulse1_assignments = {"I+": "A", "I-": "E"}
+# pulse2_assignments = {"I+": "E", "I-": "A"}
+pulse1_assignments = {"I+": "C", "I-": "G"}
+pulse2_assignments = {"I+": "G", "I-": "C"}
+
+# measure_assignments = {"V1+": "C", "V1-": "G", "V2+": "C", "V2-": "G"}
+# measure_assignments = {"V1+": "A", "V1-": "E", "V2+": "C", "V2-": "G"}
+measure_assignments = {}
+# measure_assignments = {"V1+": "C", "V1-": "G", "V2+": "A", "V2-": "E"}
 # measure_assignments = {"I+": "C", "I-": "G", "V1+": "C", "V1-": "G", "V2+": "E", "V2-": "A"}
 
 top_lockin = instruments.SR830_RS232()
@@ -26,13 +32,20 @@ bot_lockin = instruments.SR830_RS232()
 source = instruments.K6221()
 sb = instruments.SwitchBox()
 pg = instruments.K2461()
+# dmm = instruments.K2000()
+
 
 sb.connect(15)
 source.connect(16)
 top_lockin.connect(6)
 bot_lockin.connect(10)
 pg.connect()
+
+
 sb.switch(measure_assignments)
+
+# dmm.connect(9)
+# dmm.prepare_measure_one(10.0, 0.2)
 
 source.sine_wave(frequency, current)
 source.set_phase_marker()
@@ -42,45 +55,50 @@ time.sleep(2)
 
 top_lockin.set_harmonic(1)
 top_lockin.set_time_constant(0.1)
-top_lockin.auto_phase()
+# top_lockin.auto_phase()
+top_lockin.set_phase(0)
 # top_lockin.set_harmonic(2)
 top_lockin.auto_range()
+# top_lockin.set_sensitivity(100e-6)
 top_lockin.set_filter(12)
+
+# k2000_scaling = top_lockin.get_sensitivity()/10.0
 
 bot_lockin.set_harmonic(1)
 bot_lockin.set_time_constant(0.1)
-bot_lockin.auto_phase()
+# bot_lockin.auto_phase()
+bot_lockin.set_phase(90)
 bot_lockin.set_harmonic(2)
 bot_lockin.auto_range()
 bot_lockin.set_filter(12)
 
-t_pos = np.empty(num_points * num_loops)
+t_pos = np.zeros(num_points * num_loops)
 
-rxx_pos_r = np.empty(num_points * num_loops)
-rxx_pos_theta = np.empty(num_points * num_loops)
+rxx_pos_r = np.zeros(num_points * num_loops)
+rxx_pos_theta = np.zeros(num_points * num_loops)
 
-rxy_pos_r = np.empty(num_points * num_loops)
-rxy_pos_theta = np.empty(num_points * num_loops)
+rxy_pos_r = np.zeros(num_points * num_loops)
+rxy_pos_theta = np.zeros(num_points * num_loops)
 
-t_neg = np.empty(num_points * num_loops)
+t_neg = np.zeros(num_points * num_loops)
 
-rxx_neg_r = np.empty(num_points * num_loops)
-rxx_neg_theta = np.empty(num_points * num_loops)
+rxx_neg_r = np.zeros(num_points * num_loops)
+rxx_neg_theta = np.zeros(num_points * num_loops)
 
-rxy_neg_r = np.empty(num_points * num_loops)
-rxy_neg_theta = np.empty(num_points * num_loops)
+rxy_neg_r = np.zeros(num_points * num_loops)
+rxy_neg_theta = np.zeros(num_points * num_loops)
 
 fig = plt.figure(1)
 rxx_ax = plt.subplot(211)
 rxy_ax = plt.subplot(212)
 
 rxx_pos_line, = rxx_ax.plot(t_pos, rxx_pos_r, 'k.')
-rxx_neg_line, = rxx_ax.plot(t_neg, rxx_neg_r, 'k.')
+rxx_neg_line, = rxx_ax.plot(t_neg, rxx_neg_r, 'r.')
 rxx_ax.set_ylabel('R_xx (Ohms)')
 rxx_ax.ticklabel_format(useOffset=False)
 
 rxy_pos_line, = rxy_ax.plot(t_pos, rxy_pos_r, 'k.')
-rxy_neg_line, = rxy_ax.plot(t_neg, rxy_neg_r, 'k.')
+rxy_neg_line, = rxy_ax.plot(t_neg, rxy_neg_r, 'r.')
 rxy_ax.set_ylabel('R_xy (Ohms)')
 rxy_ax.set_xlabel('Time (s)')
 rxy_ax.ticklabel_format(useOffset=False)
@@ -99,12 +117,15 @@ for j in range(0, num_loops):
     sb.switch(measure_assignments)
     time.sleep(200e-3)
     source.wave_output_on()
+    # time.sleep(500e-3)
+    time.sleep(1)
     for i in range(0, num_points):
-        t_pos[i] = time.time() - start_time
-        rxx_pos_r[i] = top_lockin.get_radius()
-        rxx_pos_theta[i] = top_lockin.get_angle()
-        rxy_pos_r[i] = bot_lockin.get_radius()
-        rxy_pos_theta[i] = bot_lockin.get_angle()
+        t_pos[i + j*num_points] = time.time() - start_time
+        rxx_pos_r[i + j*num_points] = top_lockin.get_radius()
+        # rxx_pos_r[i + j*num_points] = dmm.measure_one()*k2000_scaling
+        rxx_pos_theta[i + j*num_points] = top_lockin.get_angle()
+        rxy_pos_r[i + j*num_points] = bot_lockin.get_radius()
+        rxy_pos_theta[i + j*num_points] = bot_lockin.get_angle()
 
     rxx_pos_line.set_data(t_pos, rxx_pos_r / (current * 1e-3))
     rxy_pos_line.set_data(t_pos, rxy_pos_r / (current * 1e-3))
@@ -112,7 +133,7 @@ for j in range(0, num_loops):
     rxx_ax.autoscale_view()
     rxy_ax.relim()
     rxy_ax.autoscale_view()
-    plt.pause(0.01)
+    plt.pause(0.1)
 
     source.wave_output_off()
     sb.switch(pulse2_assignments)
@@ -122,12 +143,14 @@ for j in range(0, num_loops):
     sb.switch(measure_assignments)
     time.sleep(200e-3)
     source.wave_output_on()
+    # time.sleep(500e-3)
+    time.sleep(1)
     for i in range(0, num_points):
-        t_neg[i] = time.time() - start_time
-        rxx_neg_r[i] = top_lockin.get_radius()
-        rxx_neg_theta[i] = top_lockin.get_angle()
-        rxy_neg_r[i] = bot_lockin.get_radius()
-        rxy_neg_theta[i] = bot_lockin.get_angle()
+        t_neg[i + j*num_points] = time.time() - start_time
+        rxx_neg_r[i + j*num_points] = top_lockin.get_radius()
+        rxx_neg_theta[i + j*num_points] = top_lockin.get_angle()
+        rxy_neg_r[i + j*num_points] = bot_lockin.get_radius()
+        rxy_neg_theta[i + j*num_points] = bot_lockin.get_angle()
 
     rxx_neg_line.set_data(t_neg, rxx_neg_r / (current * 1e-3))
     rxy_neg_line.set_data(t_neg, rxy_neg_r / (current * 1e-3))
@@ -135,14 +158,13 @@ for j in range(0, num_loops):
     rxx_ax.autoscale_view()
     rxy_ax.relim()
     rxy_ax.autoscale_view()
-    plt.pause(0.01)
+    plt.pause(0.1)
 
 source.wave_output_off()
 source.close()
 sb.reset_all()
 
 root = tk.Tk()
-root.withdraw()
 data = np.column_stack((t_pos, rxx_pos_r, rxx_pos_theta, rxy_pos_r, rxy_pos_theta, t_neg, rxx_neg_r, rxx_neg_theta,
                         rxy_neg_r, rxy_neg_theta))
 name = dialog.asksaveasfilename(title='Save')
