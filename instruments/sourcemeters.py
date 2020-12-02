@@ -2,7 +2,7 @@ import visa
 import numpy as np
 import time
 
-__all__ = ['K2400', 'K2401', 'K2461', 'K6221']
+__all__ = ['K2400', 'K2401', 'K2461', 'K6221', 'K6221_Ethernet']
 
 
 class K2400:
@@ -410,25 +410,77 @@ class K2461:
         self.k2461.close()
 
 
-class K6221:
+class K6221_Ethernet:
 
-    def connect(self, port):
-        """
-        Connects to device and resets it
-        :param int port:
-        :return:
-        """
+    def connect(self):
         rm = visa.ResourceManager('@ni')
-        self.k2661 = rm.open_resource(f'COM{port}', baud_rate=19200)
-        self.k2661.close()
-        self.k2661.open()
-        self.k2661.baud_rate = 19200
-        self.k2661.timeout = 10000
-        self.k2661.write_termination = '\r\n'
-        self.k2661.read_termination = '\r\n'
-        self.k2661.write('*rst')
-        self.k2661.write('*cls')
-        print('connected to: ', self.k2661.query('*IDN?'))
+        self.K6221 = rm.open_resource("TCPIP::192.168.0.10::1394::SOCKET", write_termination='\r\n',
+                                      read_termination='\r\n')
+        self.K6221.write('*rst')
+        self.K6221.write('*cls')
+        self.K6221.timeout = 30000
+        self.K6221.write('display:enable 0')
+        self.send_to_2182A('display:enable 0')
+
+    def set_compliance(self, volts):
+        self.K6221.write(f'source:current:compliance {volts}')
+
+    def configure_pulse(self, width, count, n_low=2):
+        self.K6221.write(f'source:pdelta:sweep on')
+        self.K6221.write(f'source:pdelta:width {width}')
+        self.K6221.write(f'source:pdelta:count {count}')
+        self.K6221.write(f'source:pdelta:lmeasure {n_low}')
+        self.K6221.write(f'source:pdelta:sdelay {width / 2}')
+
+    def configure_linear_sweep(self, start, stop, step, delay, count, ranging='best'):
+        self.K6221.write(f'source:sweep:spacing linear')
+        self.K6221.write(f'source:current:start {start}')
+        self.K6221.write(f'source:current:stop {stop}')
+        self.K6221.write(f'source:current:step {step}')
+        self.K6221.write(f'source:delay {delay}')
+        self.K6221.write(f'source:sweep:count {count}')
+        self.K6221.write(f'source:sweep:ranging {ranging}')
+
+    def arm_pulse_sweep(self):
+        self.K6221.write(f'source:pdelta:arm')
+
+    def trigger_pulse_sweep(self):
+        self.K6221.write('INIT:IMM')
+
+    def get_trace(self):
+        state = ''
+        self.K6221.write('status:meas?')
+        while state == '':
+            try:
+                state = self.K6221.read()
+            except visa.VisaIOError as error:
+                if error.abbreviation == 'VI_ERROR_TMO':
+                    print('still waiting to finish')
+                else:
+                    print(error)
+                    break
+        # print(f'state: {state}')
+        self.K6221.write(f'source:sweep:abort')
+        time.sleep(0.25)
+        data = self.K6221.query_ascii_values('trace:data?')
+        return np.array(data)
+
+    def set_sense_chan_and_range(self, channel, volt_range):
+        channel_comm = f'sense:channel {channel}'
+        self.K6221.write(f'system:communicate:serial:send "{channel_comm}"')
+
+        if volt_range == 'Auto' or volt_range == 'auto':
+            range_comm = f'sense:voltage:channel{channel}:range:auto on'
+            self.K6221.write(f'system:communicate:serial:send "{range_comm}"')
+        else:
+            range_comm = f'sense:voltage:channel{channel}:range:auto off'
+            self.K6221.write(f'system:communicate:serial:send "{range_comm}"')
+            range_comm = f'sense:voltage:channel{channel}:range {volt_range}'
+            self.K6221.write(f'system:communicate:serial:send "{range_comm}"')
+
+
+    def send_to_2182A(self, string):
+        self.K6221.write(f'system:communicate:serial:send "{string}"')
 
     def sine_wave(self, hz, ma, duty=50):
         """
@@ -438,17 +490,16 @@ class K6221:
         :param duty: Duty cycle def: 50%
         :return:
         """
-        self.k2661.write('*RST')
-        self.k2661.write('SOUR:WAVE:FUNC SIN')
-        self.k2661.write(f'SOUR:WAVE:FREQ {hz}')
-        self.k2661.write(f'SOUR:WAVE:AMPL {ma * 1e-3}')
-        self.k2661.write('SOUR:WAVE:ARM')
+        self.K6221.write('*RST')
+        self.K6221.write('SOUR:WAVE:FUNC SIN')
+        self.K6221.write(f'SOUR:WAVE:FREQ {hz}')
+        self.K6221.write(f'SOUR:WAVE:AMPL {ma * 1e-3}')
+        self.K6221.write('SOUR:WAVE:ARM')
 
     def set_phase_marker(self, enable=1, phase=0, pin=4):
-        self.k2661.write(f'SOUR:WAVE:PMARK:OLIN {pin}')
-        self.k2661.write(f'SOUR:WAVE:PMARK:LEV {phase}')
-        self.k2661.write(f'SOUR:WAVE:PMARK:STAT {enable}')
-
+        self.K6221.write(f'SOUR:WAVE:PMARK:OLIN {pin}')
+        self.K6221.write(f'SOUR:WAVE:PMARK:LEV {phase}')
+        self.K6221.write(f'SOUR:WAVE:PMARK:STAT {enable}')
 
     # Current in mA and Freq in Hz duty in %
     def square_wave(self, hz, ma, duty=50):
@@ -459,31 +510,110 @@ class K6221:
         :param float duty: Duty cycle def: 50%
         :return:
         """
-        self.k2661.write('*RST')
-        self.k2661.write('SOUR:WAVE:FUNC SQU')
-        self.k2661.write(f'SOUR:WAVE:FREQ {hz}')
-        self.k2661.write(f'SOUR:WAVE:AMPL {ma * 1e-3}')
-        self.k2661.write(f'SOUR:WAVE:DCYC {duty}')
+        self.K6221.write('*RST')
+        self.K6221.write('SOUR:WAVE:FUNC SQU')
+        self.K6221.write(f'SOUR:WAVE:FREQ {hz}')
+        self.K6221.write(f'SOUR:WAVE:AMPL {ma * 1e-3}')
+        self.K6221.write(f'SOUR:WAVE:DCYC {duty}')
 
     def wave_output_on(self):
         """
         Enables the output for the wave prepared using sine_wave or square_wave
         :return:
         """
-        self.k2661.write('SOUR:WAVE:ARM')
-        self.k2661.write('SOUR:WAVE:INIT')
+        self.K6221.write('SOUR:WAVE:ARM')
+        self.K6221.write('SOUR:WAVE:INIT')
 
     def wave_output_off(self):
         """
         Disables current output
         :return:
         """
-        self.k2661.write('SOUR:WAVE:ABOR')
+        self.K6221.write('SOUR:WAVE:ABOR')
 
     def close(self):
         """
         Closes the instrument connection, i.e. frees the port up for other applications/threads. Also disables output.
         :return:
         """
-        self.k2661.write('SOUR:WAVE:ABOR')
-        self.k2661.close()
+        self.K6221.write('abort')
+        self.K6221.write('display:enable 1')
+        self.K6221.close()
+
+
+class K6221:
+
+    def connect(self, port):
+        """
+        Connects to device and resets it
+        :param int port:
+        :return:
+        """
+        rm = visa.ResourceManager('@ni')
+        self.K6221 = rm.open_resource(f'COM{port}', baud_rate=19200)
+        self.K6221.close()
+        self.K6221.open()
+        self.K6221.baud_rate = 19200
+        self.K6221.timeout = 10000
+        self.K6221.write_termination = '\r\n'
+        self.K6221.read_termination = '\r\n'
+        self.K6221.write('*rst')
+        self.K6221.write('*cls')
+        print('connected to: ', self.K6221.query('*IDN?'))
+
+    def sine_wave(self, hz, ma, duty=50):
+        """
+        Prepare the instrument to produce a sine wave output. Use with wave_output_on and wave_output_off
+        :param hz: Frequency in Hz
+        :param float ma: peak to peak amplitude in Milliamps
+        :param duty: Duty cycle def: 50%
+        :return:
+        """
+        self.K6221.write('*RST')
+        self.K6221.write('SOUR:WAVE:FUNC SIN')
+        self.K6221.write(f'SOUR:WAVE:FREQ {hz}')
+        self.K6221.write(f'SOUR:WAVE:AMPL {ma * 1e-3}')
+        self.K6221.write('SOUR:WAVE:ARM')
+
+    def set_phase_marker(self, enable=1, phase=0, pin=4):
+        self.K6221.write(f'SOUR:WAVE:PMARK:OLIN {pin}')
+        self.K6221.write(f'SOUR:WAVE:PMARK:LEV {phase}')
+        self.K6221.write(f'SOUR:WAVE:PMARK:STAT {enable}')
+
+    # Current in mA and Freq in Hz duty in %
+    def square_wave(self, hz, ma, duty=50):
+        """
+        Prepare a square wave output. Use with wave_output_on and wave_output_off
+        :param float hz: desired frequency in Hz
+        :param float ma: desired amplitude in milliAmps
+        :param float duty: Duty cycle def: 50%
+        :return:
+        """
+        self.K6221.write('*RST')
+        self.K6221.write('SOUR:WAVE:FUNC SQU')
+        self.K6221.write(f'SOUR:WAVE:FREQ {hz}')
+        self.K6221.write(f'SOUR:WAVE:AMPL {ma * 1e-3}')
+        self.K6221.write(f'SOUR:WAVE:DCYC {duty}')
+
+    def wave_output_on(self):
+        """
+        Enables the output for the wave prepared using sine_wave or square_wave
+        :return:
+        """
+        self.K6221.write('SOUR:WAVE:ARM')
+        self.K6221.write('SOUR:WAVE:INIT')
+
+    def wave_output_off(self):
+        """
+        Disables current output
+        :return:
+        """
+        self.K6221.write('SOUR:WAVE:ABOR')
+
+    def close(self):
+        """
+        Closes the instrument connection, i.e. frees the port up for other applications/threads. Also disables output.
+        :return:
+        """
+        self.K6221.write('SOUR:WAVE:ABOR')
+        self.K6221.close()
