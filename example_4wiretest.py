@@ -5,7 +5,7 @@ from tkinter import filedialog as dialog
 
 sb = instruments.SwitchBox()
 pg = instruments.K2461()
-sb.connect(4)
+sb.connect(15)
 pg.connect()
 
 # bb = instruments.BalanceBox()

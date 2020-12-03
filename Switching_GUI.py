@@ -41,6 +41,7 @@ class DataCollector(QtCore.QObject):
     tec = instruments.TEC1089SV()
 
     scope_enabled = False
+    tec_enabled = False
     # default 8 arms
     # pulse1_assignments = {"I+": "B", "I-": "F"}  # configuration for a pulse from B to F
     # pulse2_assignments = {"I+": "D", "I-": "H"}  # configuration for a pulse from D to H

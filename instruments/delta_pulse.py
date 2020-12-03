@@ -13,7 +13,7 @@ start = -35e-3
 stop = 35e-3
 step = 1e-3
 delay = 1
-repeats = 50
+repeats = 1
 channel = 1
 volt_range = 100e-3
 
@@ -27,7 +27,7 @@ source.configure_pulse(300e-6, 1)
 
 source.arm_pulse_sweep()
 source.trigger_pulse_sweep()
-
+time.sleep(5)
 data = source.get_trace()
 voltage = data[0::2]
 

@@ -413,12 +413,13 @@ class K2461:
 class K6221_Ethernet:
 
     def connect(self):
-        rm = visa.ResourceManager('@ni')
-        self.K6221 = rm.open_resource("TCPIP::192.168.0.10::1394::SOCKET", write_termination='\r\n',
-                                      read_termination='\r\n')
+        self.rm = visa.ResourceManager('@ni')
+        self.K6221 = self.rm.open_resource("TCPIP::192.168.0.10::1394::SOCKET", write_termination='\r\n',
+                                      read_termination='\r\n', timeout=10000)
+        self.K6221.write('abort')
         self.K6221.write('*rst')
         self.K6221.write('*cls')
-        self.K6221.timeout = 30000
+        self.K6221.timeout = 10000
         self.K6221.write('display:enable 0')
         self.send_to_2182A('display:enable 0')
 
@@ -448,20 +449,19 @@ class K6221_Ethernet:
         self.K6221.write('INIT:IMM')
 
     def get_trace(self):
-        state = ''
-        self.K6221.write('status:meas?')
-        while state == '':
-            try:
-                state = self.K6221.read()
-            except visa.VisaIOError as error:
-                if error.abbreviation == 'VI_ERROR_TMO':
-                    print('still waiting to finish')
-                else:
-                    print(error)
-                    break
-        # print(f'state: {state}')
+
+        state = '4'
+        while state == '4':
+            print('Still Measuring')
+            self.K6221.close()
+            time.sleep(30)
+            self.K6221 = self.rm.open_resource("TCPIP::192.168.0.10::1394::SOCKET", write_termination='\r\n',
+                                               read_termination='\r\n', timeout=10000)
+            state = self.K6221.query('status:operation:cond?')
+
+        print('Measurement Finished, Aborting wave')
         self.K6221.write(f'source:sweep:abort')
-        time.sleep(0.25)
+        time.sleep(1)
         data = self.K6221.query_ascii_values('trace:data?')
         return np.array(data)
 

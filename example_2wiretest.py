@@ -13,7 +13,7 @@ switch_box = instruments.SwitchBox()
 
 pg = instruments.K2461()
 
-switch_box.connect(4)
+switch_box.connect(15)
 
 pg.connect()
 
