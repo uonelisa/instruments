@@ -9,18 +9,18 @@ import tkinter.messagebox as mb
 from tkinter import filedialog as dialog
 
 frequency = 1
-start = -35e-3
-stop = 35e-3
-step = 1e-3
+start = -17e-3
+stop = 17e-3
+step = 0.5e-3
 delay = 1
-repeats = 1
+repeats = 10
 channel = 1
 volt_range = 100e-3
 
 current = np.tile(np.linspace(start, stop, round((stop-start)/step)+1), repeats)
 source = instruments.K6221_Ethernet()
 source.connect()
-source.set_compliance(60)
+source.set_compliance(40)
 source.set_sense_chan_and_range(channel, volt_range)
 source.configure_linear_sweep(start, stop, step, delay, repeats)
 source.configure_pulse(300e-6, 1)

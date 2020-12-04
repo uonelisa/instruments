@@ -419,7 +419,7 @@ class K6221_Ethernet:
         self.K6221.write('abort')
         self.K6221.write('*rst')
         self.K6221.write('*cls')
-        self.K6221.timeout = 10000
+        # self.K6221.timeout = 10000
         self.K6221.write('display:enable 0')
         self.send_to_2182A('display:enable 0')
 
@@ -448,13 +448,13 @@ class K6221_Ethernet:
     def trigger_pulse_sweep(self):
         self.K6221.write('INIT:IMM')
 
-    def get_trace(self):
+    def get_trace(self, delay=60):
 
         state = '4'
         while state == '4':
             print('Still Measuring')
             self.K6221.close()
-            time.sleep(30)
+            time.sleep(delay)
             self.K6221 = self.rm.open_resource("TCPIP::192.168.0.10::1394::SOCKET", write_termination='\r\n',
                                                read_termination='\r\n', timeout=10000)
             state = self.K6221.query('status:operation:cond?')
