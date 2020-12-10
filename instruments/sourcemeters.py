@@ -2,7 +2,7 @@ import visa
 import numpy as np
 import time
 
-__all__ = ['K2400', 'K2401', 'K2461', 'K6221', 'K6221_Ethernet']
+__all__ = ['K2400', 'K2401', 'K2461', 'K6221', 'K6221_Ethernet', 'K6221_GPIB']
 
 
 class K2400:
@@ -415,7 +415,7 @@ class K6221_Ethernet:
     def connect(self):
         self.rm = visa.ResourceManager('@ni')
         self.K6221 = self.rm.open_resource("TCPIP::192.168.0.10::1394::SOCKET", write_termination='\r\n',
-                                      read_termination='\r\n', timeout=10000)
+                                      read_termination='\n', timeout=10000)
         self.K6221.write('abort')
         self.K6221.write('*rst')
         self.K6221.write('*cls')
@@ -450,19 +450,31 @@ class K6221_Ethernet:
 
     def get_trace(self, delay=60):
 
-        state = '4'
-        while state == '4':
-            print('Still Measuring')
+        is_finished = False
+        while not is_finished:
             self.K6221.close()
             time.sleep(delay)
             self.K6221 = self.rm.open_resource("TCPIP::192.168.0.10::1394::SOCKET", write_termination='\r\n',
-                                               read_termination='\r\n', timeout=10000)
-            state = self.K6221.query('status:operation:cond?')
-
+                                               read_termination='\n', timeout=10000)
+            state = int(self.K6221.query('status:operation:cond?'))
+            is_finished = bin(state)[-2] == '1'
+            sweeping = bin(state)[-4] == '1'
+            aborted = bin(state)[-3] == '1'
+            if not sweeping:
+                print('Not sweeping or done?')
+            if aborted:
+                is_finished = True
+                print('apparently this sweep is aborted, script is ending measurement.')
+            print(f'state: {state}')
         print('Measurement Finished, Aborting wave')
         self.K6221.write(f'source:sweep:abort')
+        state = self.K6221.query('status:operation:cond?')
+        print(f'state: {state}')
         time.sleep(1)
+        print('reading data')
         data = self.K6221.query_ascii_values('trace:data?')
+        state = self.K6221.query('status:operation:cond?')
+        print(f'state: {state}')
         return np.array(data)
 
     def set_sense_chan_and_range(self, channel, volt_range):
@@ -540,6 +552,145 @@ class K6221_Ethernet:
         self.K6221.write('display:enable 1')
         self.K6221.close()
 
+class K6221_GPIB:
+
+    def connect(self, addr=12):
+        self.addr = addr
+        self.rm = visa.ResourceManager('@ni')
+        self.K6221 = self.rm.open_resource(f'GPIB0::{self.addr}::INSTR', read_termination='\n', timeout=10000)
+        self.K6221.write('abort')
+        self.K6221.write('*rst')
+        self.K6221.write('*cls')
+        self.K6221.write('display:enable 0')
+        self.send_to_2182A('display:enable 0')
+
+    def set_compliance(self, volts):
+        self.K6221.write(f'source:current:compliance {volts}')
+
+    def configure_pulse(self, width, count, n_low=2):
+        self.K6221.write(f'source:pdelta:sweep on')
+        self.K6221.write(f'source:pdelta:width {width}')
+        self.K6221.write(f'source:pdelta:count {count}')
+        self.K6221.write(f'source:pdelta:lmeasure {n_low}')
+        self.K6221.write(f'source:pdelta:sdelay {width / 2}')
+
+    def configure_linear_sweep(self, start, stop, step, delay, count, ranging='best'):
+        self.K6221.write(f'source:sweep:spacing linear')
+        self.K6221.write(f'source:current:start {start}')
+        self.K6221.write(f'source:current:stop {stop}')
+        self.K6221.write(f'source:current:step {step}')
+        self.K6221.write(f'source:delay {delay}')
+        self.K6221.write(f'source:sweep:count {count}')
+        self.K6221.write(f'source:sweep:ranging {ranging}')
+
+    def arm_pulse_sweep(self):
+        self.K6221.write(f'source:pdelta:arm')
+
+    def trigger_pulse_sweep(self):
+        self.K6221.write('INIT:IMM')
+
+    def get_trace(self, delay=60):
+
+        # state = '40'
+        is_finished = False
+        while not is_finished:
+            self.K6221.close()
+            time.sleep(delay)
+            self.K6221 = self.rm.open_resource(f'GPIB0::{self.addr}::INSTR', read_termination='\n', timeout=10000)
+            state = int(self.K6221.query('status:operation:cond?'))
+            is_finished = bin(state)[-2] == '1'
+            sweeping = bin(state)[-4] == '1'
+            aborted = bin(state)[-3] == '1'
+            if not sweeping:
+                print('Not sweeping or done?')
+            if aborted:
+                is_finished = True
+                print('apparently this sweep is aborted, script is ending measurement.')
+            print(f'state: {state}')
+        print('Measurement Finished, Aborting wave')
+        self.K6221.write(f'source:sweep:abort')
+        state = self.K6221.query('status:operation:cond?')
+        print(f'state: {state}')
+        time.sleep(1)
+        print('reading data')
+        data = self.K6221.query_ascii_values('trace:data?')
+        state = self.K6221.query('status:operation:cond?')
+        print(f'state: {state}')
+        return np.array(data)
+
+    def set_sense_chan_and_range(self, channel, volt_range):
+        channel_comm = f'sense:channel {channel}'
+        self.K6221.write(f'system:communicate:serial:send "{channel_comm}"')
+
+        if volt_range == 'Auto' or volt_range == 'auto':
+            range_comm = f'sense:voltage:channel{channel}:range:auto on'
+            self.K6221.write(f'system:communicate:serial:send "{range_comm}"')
+        else:
+            range_comm = f'sense:voltage:channel{channel}:range:auto off'
+            self.K6221.write(f'system:communicate:serial:send "{range_comm}"')
+            range_comm = f'sense:voltage:channel{channel}:range {volt_range}'
+            self.K6221.write(f'system:communicate:serial:send "{range_comm}"')
+
+    def send_to_2182A(self, string):
+        self.K6221.write(f'system:communicate:serial:send "{string}"')
+
+    def sine_wave(self, hz, ma, duty=50):
+        """
+        Prepare the instrument to produce a sine wave output. Use with wave_output_on and wave_output_off
+        :param hz: Frequency in Hz
+        :param float ma: peak to peak amplitude in Milliamps
+        :param duty: Duty cycle def: 50%
+        :return:
+        """
+        self.K6221.write('*RST')
+        self.K6221.write('SOUR:WAVE:FUNC SIN')
+        self.K6221.write(f'SOUR:WAVE:FREQ {hz}')
+        self.K6221.write(f'SOUR:WAVE:AMPL {ma * 1e-3}')
+        self.K6221.write('SOUR:WAVE:ARM')
+
+    def set_phase_marker(self, enable=1, phase=0, pin=4):
+        self.K6221.write(f'SOUR:WAVE:PMARK:OLIN {pin}')
+        self.K6221.write(f'SOUR:WAVE:PMARK:LEV {phase}')
+        self.K6221.write(f'SOUR:WAVE:PMARK:STAT {enable}')
+
+    # Current in mA and Freq in Hz duty in %
+    def square_wave(self, hz, ma, duty=50):
+        """
+        Prepare a square wave output. Use with wave_output_on and wave_output_off
+        :param float hz: desired frequency in Hz
+        :param float ma: desired amplitude in milliAmps
+        :param float duty: Duty cycle def: 50%
+        :return:
+        """
+        self.K6221.write('*RST')
+        self.K6221.write('SOUR:WAVE:FUNC SQU')
+        self.K6221.write(f'SOUR:WAVE:FREQ {hz}')
+        self.K6221.write(f'SOUR:WAVE:AMPL {ma * 1e-3}')
+        self.K6221.write(f'SOUR:WAVE:DCYC {duty}')
+
+    def wave_output_on(self):
+        """
+        Enables the output for the wave prepared using sine_wave or square_wave
+        :return:
+        """
+        self.K6221.write('SOUR:WAVE:ARM')
+        self.K6221.write('SOUR:WAVE:INIT')
+
+    def wave_output_off(self):
+        """
+        Disables current output
+        :return:
+        """
+        self.K6221.write('SOUR:WAVE:ABOR')
+
+    def close(self):
+        """
+        Closes the instrument connection, i.e. frees the port up for other applications/threads. Also disables output.
+        :return:
+        """
+        self.K6221.write('abort')
+        self.K6221.write('display:enable 1')
+        self.K6221.close()
 
 class K6221:
 

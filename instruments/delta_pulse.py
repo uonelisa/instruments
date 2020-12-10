@@ -11,27 +11,30 @@ from tkinter import filedialog as dialog
 frequency = 1
 start = -17e-3
 stop = 17e-3
-step = 0.5e-3
+step = 0.1e-3
 delay = 1
-repeats = 10
+repeats = 5
 channel = 1
 volt_range = 100e-3
+width = 500e-6
 
-current = np.tile(np.linspace(start, stop, round((stop-start)/step)+1), repeats)
+current = np.tile(np.linspace(start, stop, round((stop - start) / step) + 1), repeats)
 source = instruments.K6221_Ethernet()
 source.connect()
 source.set_compliance(40)
 source.set_sense_chan_and_range(channel, volt_range)
 source.configure_linear_sweep(start, stop, step, delay, repeats)
-source.configure_pulse(300e-6, 1)
+source.configure_pulse(width, 1)
 
 source.arm_pulse_sweep()
 source.trigger_pulse_sweep()
+start_time = time.time()
 time.sleep(5)
 data = source.get_trace()
+print('time taken: ', time.time()-start_time)
 voltage = data[0::2]
 
-my_scatter, = plt.plot(current, voltage, 'k.')
+my_scatter, = plt.plot(current[0:len(voltage)], voltage, 'k.')
 
 my_line, = plt.plot([min(current), max(current)], [min(voltage), max(voltage)], 'r-')
 plt.ticklabel_format(useOffset=False)
@@ -40,7 +43,9 @@ plt.ylabel('Voltage (V)')
 
 plt.pause(1)
 
-save_data = np.column_stack((current, voltage))
+save_data = np.column_stack((current[0:len(voltage)], voltage))
+print(len(current), len(voltage))
+
 name = dialog.asksaveasfilename(title='Save')
 if name:  # if a name was entered, don't save otherwise
     if name[-4:] != '.txt':  # add .txt if not already there
@@ -51,7 +56,3 @@ else:
     print('Data not saved')
 
 plt.show()
-
-
-
-

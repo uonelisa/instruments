@@ -59,10 +59,13 @@ filename = filedialog.askopenfilename(initialdir='../DATA/',
 data = np.loadtxt(filename, delimiter='\t')
 
 current = data[:, 0]*1e3
-voltage = data[:, 1]
+
+voltage = -data[:, 1]
+
+
 
 rxx_pos_line, = plt.plot(current, voltage, 'k.')
-plt.plot([min(current), max(current)], [min(voltage), max(voltage)])
+# plt.plot([min(current), max(current)], [min(voltage), max(voltage)])
 plt.ticklabel_format(useOffset=False)
 plt.xlabel('Current (mA)')
 plt.ylabel('Voltage (V)')
