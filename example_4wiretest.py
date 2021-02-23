@@ -5,7 +5,7 @@ from tkinter import filedialog as dialog
 
 sb = instruments.SwitchBox()
 pg = instruments.K2461()
-sb.connect(15)
+sb.connect(8)
 pg.connect()
 
 # bb = instruments.BalanceBox()
@@ -13,20 +13,28 @@ pg.connect()
 # bb.enable_all()
 # bb.reset_resistances()
 
-ass1 = {"I+": "A", "I-": "E", "V1+": "B", "V1-": "D"}
-ass2 = {"I+": "B", "I-": "F", "V1+": "C", "V1-": "E"}
-ass3 = {"I+": "C", "I-": "G", "V1+": "D", "V1-": "F"}
-ass4 = {"I+": "D", "I-": "H", "V1+": "E", "V1-": "G"}
-ass5 = {"I+": "E", "I-": "A", "V1+": "F", "V1-": "H"}
-ass6 = {"I+": "F", "I-": "B", "V1+": "G", "V1-": "A"}
-ass7 = {"I+": "G", "I-": "C", "V1+": "H", "V1-": "B"}
-ass8 = {"I+": "H", "I-": "D", "V1+": "A", "V1-": "C"}
+# ass1 = {"I+": "A", "I-": "E", "V1+": "B", "V1-": "D"}
+# ass2 = {"I+": "B", "I-": "F", "V1+": "C", "V1-": "E"}
+# ass3 = {"I+": "C", "I-": "G", "V1+": "D", "V1-": "F"}
+# ass4 = {"I+": "D", "I-": "H", "V1+": "E", "V1-": "G"}
+# ass5 = {"I+": "E", "I-": "A", "V1+": "F", "V1-": "H"}
+# ass6 = {"I+": "F", "I-": "B", "V1+": "G", "V1-": "A"}
+# ass7 = {"I+": "G", "I-": "C", "V1+": "H", "V1-": "B"}
+# ass8 = {"I+": "H", "I-": "D", "V1+": "A", "V1-": "C"}
+ass1 = {"I+": "A", "I-": "D", "V1+": "B", "V1-": "C"}
+ass2 = {"I+": "D", "I-": "G", "V1+": "E", "V1-": "F"}
+ass3 = {"I+": "A", "I-": "D", "V1+": "B", "V1-": "C"}
+ass4 = {"I+": "A", "I-": "D", "V1+": "B", "V1-": "C"}
+ass5 = {"I+": "A", "I-": "D", "V1+": "B", "V1-": "C"}
+ass6 = {"I+": "A", "I-": "D", "V1+": "B", "V1-": "C"}
+ass7 = {"I+": "A", "I-": "D", "V1+": "B", "V1-": "C"}
+ass8 = {"I+": "A", "I-": "D", "V1+": "B", "V1-": "C"}
 
 R = [0, 0, 0, 0, 0, 0, 0, 0]
 
 sb.switch(ass1)
 time.sleep(0.5)
-pg.enable_4_wire_probe(0.1e-3)
+pg.enable_4_wire_probe(0.05e-3)
 time.sleep(0.1)
 c, v = pg.read_one()
 R[0] = v / c

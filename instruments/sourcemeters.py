@@ -420,8 +420,7 @@ class K6221_Ethernet:
         self.K6221.write('*rst')
         self.K6221.write('*cls')
         # self.K6221.timeout = 10000
-        self.K6221.write('display:enable 0')
-        self.send_to_2182A('display:enable 0')
+
 
     def set_compliance(self, volts):
         self.K6221.write(f'source:current:compliance {volts}')
@@ -442,20 +441,82 @@ class K6221_Ethernet:
         self.K6221.write(f'source:sweep:count {count}')
         self.K6221.write(f'source:sweep:ranging {ranging}')
 
+    def configure_custom_sweep(self, sweep_list, delay, compliance, count, bias=0, ranging='best'):
+        self.K6221.write(f'source:current {bias}')
+        self.K6221.write('source:sweep:spacing list')
+        self.K6221.write('source:list:current 0')
+        for x in sweep_list:
+            self.K6221.write(f'source:list:current:append {x}')
+        self.K6221.write(f'source:list:delay {delay}')
+        self.K6221.write(f'source:list:compliance {compliance}')
+        self.K6221.write(f'source:sweep:count {count}')
+        self.K6221.write(f'source:sweep:ranging {ranging}')
+        self.K6221.write('source:sweep:cabort off')
+
+    def configure_switching_custom_sweep(self, sweep_list, delay_list, compliance, count, bias=0, ranging='best'):
+        self.K6221.write(f'source:current {bias}')
+        self.K6221.write('source:sweep:spacing list')
+        # Create list with first value then append all other values in the loop.
+        self.K6221.write(f'source:list:current {sweep_list[0]}')
+        for x in sweep_list[1::]:
+            self.K6221.write(f'source:list:current:append {x}')
+        self.K6221.write(f'source:list:delay {delay_list[0]}')
+        for y in delay_list[1::]:
+            self.K6221.write(f'source:list:delay:append {y}')
+        self.K6221.write(f'source:list:compliance {compliance}')
+        self.K6221.write(f'source:sweep:count {count}')
+        self.K6221.write(f'source:sweep:ranging {ranging}')
+        self.K6221.write('source:sweep:cabort off')
+
     def arm_pulse_sweep(self):
+        self.K6221.write('display:enable 0')
+        self.send_to_2182A('display:enable 0')
         self.K6221.write(f'source:pdelta:arm')
 
-    def trigger_pulse_sweep(self):
+
+    def configure_diff_conductance(self, start, stop, step, delta, delay):
+        self.K6221.write(f'source:dcon:start {start}')
+        self.K6221.write(f'source:dcon:step {step}')
+        self.K6221.write(f'source:dcon:stop {stop}')
+        self.K6221.write(f'source:dcon:delta {delta}')
+        self.K6221.write(f'source:dcon:delay {delay}')
+
+
+    def arm_diff_cond(self):
+        self.K6221.write('display:enable 0')
+        self.send_to_2182A('display:enable 0')
+        self.K6221.write(f'source:dcon:arm')
+
+    def trigger(self):
         self.K6221.write('INIT:IMM')
 
     def get_trace(self, delay=60):
 
+        # is_finished = False
+        # while not is_finished:
+        #     self.K6221.close()
+        #     time.sleep(delay)
+        #     self.K6221 = self.rm.open_resource("TCPIP::192.168.0.10::1394::SOCKET", write_termination='\r\n',
+        #                                        read_termination='\n', timeout=10000)
+        #     state = int(self.K6221.query('status:operation:cond?'))
+        #     is_finished = bin(state)[-2] == '1'
+        #     sweeping = bin(state)[-4] == '1'
+        #     aborted = bin(state)[-3] == '1'
+        #     if not sweeping:
+        #         print('Not sweeping or done?')
+        #     if aborted:
+        #         is_finished = True
+        #         print('apparently this sweep is aborted, script is ending measurement.')
+        #     print(f'state: {state}')
+        # print('Measurement Finished, Aborting wave')
+        # self.K6221.write(f'source:sweep:abort')
+        # time.sleep(1)
+        # print('reading data')
+        # data = self.K6221.query_ascii_values('trace:data?')
+
         is_finished = False
         while not is_finished:
-            self.K6221.close()
             time.sleep(delay)
-            self.K6221 = self.rm.open_resource("TCPIP::192.168.0.10::1394::SOCKET", write_termination='\r\n',
-                                               read_termination='\n', timeout=10000)
             state = int(self.K6221.query('status:operation:cond?'))
             is_finished = bin(state)[-2] == '1'
             sweeping = bin(state)[-4] == '1'
@@ -468,13 +529,9 @@ class K6221_Ethernet:
             print(f'state: {state}')
         print('Measurement Finished, Aborting wave')
         self.K6221.write(f'source:sweep:abort')
-        state = self.K6221.query('status:operation:cond?')
-        print(f'state: {state}')
         time.sleep(1)
         print('reading data')
         data = self.K6221.query_ascii_values('trace:data?')
-        state = self.K6221.query('status:operation:cond?')
-        print(f'state: {state}')
         return np.array(data)
 
     def set_sense_chan_and_range(self, channel, volt_range):

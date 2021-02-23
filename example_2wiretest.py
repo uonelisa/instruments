@@ -3,21 +3,25 @@ import time
 import numpy as np
 from tkinter import filedialog as dialog
 
-assignments_0 = {"I+": "A", "I-": "E"}
-assignments_45 = {"I+": "B", "I-": "F"}
-assignments_90 = {"I+": "C", "I-": "G"}
-assignments_135 = {"I+": "D", "I-": "H"}
+# assignments_0 = {"I+": "A", "I-": "E"}
+# assignments_45 = {"I+": "B", "I-": "F"}
+# assignments_90 = {"I+": "C", "I-": "G"}
+# assignments_135 = {"I+": "D", "I-": "H"}
+assignments_0 = {"I+": "A", "I-": "D"}
+assignments_45 = {"I+": "D", "I-": "G"}
+assignments_90 = {"I+": "A", "I-": "G"}
+assignments_135 = {"I+": "G", "I-": "A"}
 
 R = np.zeros(4)
 switch_box = instruments.SwitchBox()
 
 pg = instruments.K2461()
 
-switch_box.connect(15)
+switch_box.connect(8)
 
 pg.connect()
 
-pg.enable_2_wire_probe(0.1e-3, 2)
+pg.enable_2_wire_probe(0.05e-3, 2)
 switch_box.switch(assignments_0)
 time.sleep(0.5)
 c, v = pg.read_one()

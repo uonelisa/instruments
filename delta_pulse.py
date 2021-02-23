@@ -13,8 +13,8 @@ start = -17e-3
 stop = 17e-3
 step = 0.1e-3
 delay = 1
-repeats = 5
-channel = 1
+repeats = 20
+channel = 2
 volt_range = 100e-3
 width = 500e-6
 
@@ -24,10 +24,11 @@ source.connect()
 source.set_compliance(40)
 source.set_sense_chan_and_range(channel, volt_range)
 source.configure_linear_sweep(start, stop, step, delay, repeats)
-source.configure_pulse(width, 1)
+source.configure_pulse(width, 1, 1)
 
 source.arm_pulse_sweep()
-source.trigger_pulse_sweep()
+time.sleep(2)
+source.trigger()
 start_time = time.time()
 time.sleep(5)
 data = source.get_trace()
