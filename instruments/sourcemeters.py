@@ -308,6 +308,7 @@ class K2461:
         self.k2461.write(f'sens:volt:nplc {nplc}')
         self.k2461.write('sour:func curr')
         self.k2461.write(f'sour:curr {current}')
+        self.k2461.write('sour:curr:range:auto on')
         self.k2461.write('sour:curr:vlim 2')
         self.k2461.write('outp on')
 
@@ -328,6 +329,7 @@ class K2461:
         self.k2461.write(f'sens:volt:nplc {nplc}')
         self.k2461.write('sour:func curr')
         self.k2461.write(f'sour:curr {current}')
+        self.k2461.write('sour:curr:range:auto on')
         self.k2461.write('sour:curr:vlim 2')
         self.k2461.write('outp on')
 
