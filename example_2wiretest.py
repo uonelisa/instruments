@@ -3,54 +3,53 @@ import time
 import numpy as np
 from tkinter import filedialog as dialog
 
-# assignments_0 = {"I+": "A", "I-": "E"}
-# assignments_45 = {"I+": "B", "I-": "F"}
-# assignments_90 = {"I+": "C", "I-": "G"}
-# assignments_135 = {"I+": "D", "I-": "H"}
-assignments_0 = {"I+": "A", "I-": "D"}
-assignments_45 = {"I+": "D", "I-": "G"}
-assignments_90 = {"I+": "A", "I-": "G"}
-assignments_135 = {"I+": "G", "I-": "A"}
+assignments_0 = {"I+": "A", "I-": "E"}
+assignments_45 = {"I+": "B", "I-": "F"}
+assignments_90 = {"I+": "C", "I-": "G"}
+assignments_135 = {"I+": "D", "I-": "H"}
+probe_current = 100e-6
 
 R = np.zeros(4)
-switch_box = instruments.SwitchBox()
-
+sb = instruments.SwitchBox()
 pg = instruments.K2461()
-
-switch_box.connect(8)
-
+sb.connect(8)
 pg.connect()
 
-pg.enable_2_wire_probe(0.05e-3, 2)
-switch_box.switch(assignments_0)
-time.sleep(0.5)
+sb.switch(assignments_0)
+time.sleep(0.2)
+pg.enable_2_wire_probe(probe_current)
+time.sleep(0.2)
 c, v = pg.read_one()
-R[0] = (v / c)
+R[0] = v / c
+pg.disable_probe_current()
+time.sleep(0.2)
 
-
-time.sleep(0.1)
-
-switch_box.switch(assignments_45)
-time.sleep(0.5)
+sb.switch(assignments_45)
+time.sleep(0.2)
+pg.enable_2_wire_probe(probe_current)
+time.sleep(0.2)
 c, v = pg.read_one()
-R[1] = (v / c)
+R[1] = v / c
+pg.disable_probe_current()
+time.sleep(0.2)
 
-
-time.sleep(0.1)
-
-switch_box.switch(assignments_90)
-time.sleep(0.5)
+sb.switch(assignments_90)
+time.sleep(0.2)
+pg.enable_2_wire_probe(probe_current)
+time.sleep(0.2)
 c, v = pg.read_one()
-R[2] = (v / c)
+R[2] = v / c
+pg.disable_probe_current()
+time.sleep(0.2)
 
-
-time.sleep(0.1)
-
-switch_box.switch(assignments_135)
-time.sleep(0.5)
+sb.switch(assignments_135)
+time.sleep(0.2)
+pg.enable_2_wire_probe(probe_current)
+time.sleep(0.2)
 c, v = pg.read_one()
-R[3] = (v / c)
-
+R[3] = v / c
+pg.disable_probe_current()
+time.sleep(0.2)
 
 print('Resistances: \n', R)
 pg.disable_probe_current()
