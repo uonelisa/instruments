@@ -417,12 +417,11 @@ class K6221_Ethernet:
     def connect(self):
         self.rm = visa.ResourceManager('@ni')
         self.K6221 = self.rm.open_resource("TCPIP::192.168.0.10::1394::SOCKET", write_termination='\r\n',
-                                      read_termination='\n', timeout=10000)
-        self.K6221.write('abort')
+                                           read_termination='\n', timeout=10000)
+        self.K6221.write('source:sweep:abort')
         self.K6221.write('*rst')
         self.K6221.write('*cls')
         # self.K6221.timeout = 10000
-
 
     def set_compliance(self, volts):
         self.K6221.write(f'source:current:compliance {volts}')
@@ -443,7 +442,7 @@ class K6221_Ethernet:
         self.K6221.write(f'source:sweep:count {count}')
         self.K6221.write(f'source:sweep:ranging {ranging}')
 
-    def configure_custom_sweep(self, sweep_list, delay, compliance, count, bias=0, ranging='best'):
+    def configure_custom_sweep(self, sweep_list, delay, compliance, count, bias=0.0, ranging='best'):
         self.K6221.write(f'source:current {bias}')
         self.K6221.write('source:sweep:spacing list')
         self.K6221.write('source:list:current 0')
@@ -475,14 +474,12 @@ class K6221_Ethernet:
         self.send_to_2182A('display:enable 0')
         self.K6221.write(f'source:pdelta:arm')
 
-
     def configure_diff_conductance(self, start, stop, step, delta, delay):
         self.K6221.write(f'source:dcon:start {start}')
         self.K6221.write(f'source:dcon:step {step}')
         self.K6221.write(f'source:dcon:stop {stop}')
         self.K6221.write(f'source:dcon:delta {delta}')
         self.K6221.write(f'source:dcon:delay {delay}')
-
 
     def arm_diff_cond(self):
         self.K6221.write('display:enable 0')
@@ -515,7 +512,7 @@ class K6221_Ethernet:
         # time.sleep(1)
         # print('reading data')
         # data = self.K6221.query_ascii_values('trace:data?')
-
+        start_time = time.time()
         is_finished = False
         while not is_finished:
             time.sleep(delay)
@@ -528,7 +525,7 @@ class K6221_Ethernet:
             if aborted:
                 is_finished = True
                 print('apparently this sweep is aborted, script is ending measurement.')
-            print(f'state: {state}')
+            print(f'state: {state}' + f'    time elapsed: {time.time() - start_time}')
         print('Measurement Finished, Aborting wave')
         self.K6221.write(f'source:sweep:abort')
         time.sleep(1)
@@ -545,10 +542,9 @@ class K6221_Ethernet:
             self.K6221.write(f'system:communicate:serial:send "{range_comm}"')
         else:
             range_comm = f'sense:voltage:channel{channel}:range:auto off'
-            self.K6221.write(f'system:communicate:serial:send "{range_comm}"')
+            self.send_to_2182A(range_comm)
             range_comm = f'sense:voltage:channel{channel}:range {volt_range}'
-            self.K6221.write(f'system:communicate:serial:send "{range_comm}"')
-
+            self.send_to_2182A(range_comm)
 
     def send_to_2182A(self, string):
         self.K6221.write(f'system:communicate:serial:send "{string}"')
@@ -610,6 +606,7 @@ class K6221_Ethernet:
         self.K6221.write('abort')
         self.K6221.write('display:enable 1')
         self.K6221.close()
+
 
 class K6221_GPIB:
 
@@ -750,6 +747,7 @@ class K6221_GPIB:
         self.K6221.write('abort')
         self.K6221.write('display:enable 1')
         self.K6221.close()
+
 
 class K6221:
 
