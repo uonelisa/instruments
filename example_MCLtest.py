@@ -18,12 +18,12 @@ print(systems)
 if (len(systems) > 0):
     mcl_ip = str(next(iter(systems)))
 else:
-    mcl_ip = '172.22.11.2'
-#    mcl_ip = '192.168.1.200'    
+    # mcl_ip = '172.22.11.2'
+    mcl_ip = '192.168.0.11'
 mcl_ip = input("Enter MCL IP [%s]: " % mcl_ip) or mcl_ip
 
 mcl.lidata_data_readings_l1.register_callback(datareadings)
-mcl.lidata_data_readings_l1.register_callback(datareadings)
+mcl.lidata_data_readings_l2.register_callback(datareadings)
 mcl.scope.register_callback(scopereadings)
 mcl.fft.register_callback(scopereadings)
 

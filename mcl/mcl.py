@@ -11,6 +11,7 @@ from .mcl_config import MCL_Config_GeneralLocal_Ctrl, MCL_Config_GeneralPic_Ctrl
 from .mcl_lidata import MCL_LiData_DataReadings
 from .mcl_scope import MCL_Scope, MCL_FFT
 
+
 class MCL:
     """
     MCL class to control the MCL1-540 lockin amplifer measurement system.
@@ -38,9 +39,9 @@ class MCL:
         Disconnect from the MCL system
 
     """
-    
+
     def __init__(self):
-        self._stop = False # true to stop communication in different threads
+        self._stop = False  # true to stop communication in different threads
         # ping counters for read and write connections
         self._ping_i_r = 0
         self._ping_i_w = 0
@@ -50,10 +51,10 @@ class MCL:
         self._config_general_pic_ctrl = MCL_Config_GeneralPic_Ctrl()
         self._config_general_local_ctrl = MCL_Config_GeneralLocal_Ctrl()
         self._lidata_data_readings_l1 = MCL_LiData_DataReadings(0)
-        self._lidata_data_readings_l2 = MCL_LiData_DataReadings(1)        
+        self._lidata_data_readings_l2 = MCL_LiData_DataReadings(1)
         self._scope = MCL_Scope()
         self._fft = MCL_FFT()
-        
+
         self._dests = {}
         all_subclasses = [
             self._config_general_pic_ctrl,
@@ -65,10 +66,11 @@ class MCL:
         ]
         for x in all_subclasses:
             self._add_class(x)
-       # print(self._dests)
-            
+
+    # print(self._dests)
+
     def _add_class(self, x):
-       # print('adding dest %i : %i' % (x.datatype, x.datakind))
+        # print('adding dest %i : %i' % (x.datatype, x.datakind))
         self._dests[(x.datatype, x.datakind)] = x
 
     def _get_class(self, datatype, datakind):
@@ -107,7 +109,6 @@ class MCL:
         "FFT of scope readings. Readonly."
         return self._fft
 
-        
     def find_systems(self):
         """Detect systems on the local network.
 
@@ -130,8 +131,8 @@ class MCL:
         threads = []
         replies = queue.Queue()
         for port in ports:
-            port += 2 # read reply from higher port #
-            threads.append(threading.Thread(target=self._find_systems_reply, args=[port,replies]))
+            port += 2  # read reply from higher port #
+            threads.append(threading.Thread(target=self._find_systems_reply, args=[port, replies]))
         # Wait for all threads to complete
         for t in threads:
             t.start()
@@ -142,9 +143,9 @@ class MCL:
             ip, system = replies.get()
             systems[ip] = system
         return systems
-    
-    def _find_systems_reply(self,port,replies):
-        sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP) 
+
+    def _find_systems_reply(self, port, replies):
+        sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP)
         sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         sock.bind(('', port))
         mreq = struct.pack("=4sl", socket.inet_aton("239.255.255.250"), socket.INADDR_ANY)
@@ -153,14 +154,13 @@ class MCL:
         systems = {}
         while True:
             try:
-                data, (ip, port) = sock.recvfrom(1024) # buffer size is 1024 bytes
-            except: # no reply within one second
-#                print('UDP read error')
-#                print(sys.exc_info()[0])
+                data, (ip, port) = sock.recvfrom(1024)  # buffer size is 1024 bytes
+            except:  # no reply within one second
+                #                print('UDP read error')
+                #                print(sys.exc_info()[0])
                 break
             if data[0:10] == b'MCL-REPLY:':
-                replies.put((ip,json.loads(data[10:])))
-
+                replies.put((ip, json.loads(data[10:])))
 
     def connect(self, mcl_ip):
         """Connect to the MCL system
@@ -174,7 +174,7 @@ class MCL:
         -------
         none
         """
-         
+
         # Create a TCP/IP socket
         self._sock_r = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self._sock_w = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -205,13 +205,14 @@ class MCL:
         threading.Thread(target=self._data_w, daemon=True).start()
         # trigger update of user variables
         time.sleep(1)
-        self._config_general_local_ctrl.val = self._config_general_local_ctrl.val._replace(updateuser = True)
+        self._config_general_local_ctrl.val = self._config_general_local_ctrl.val._replace(updateuser=True)
         self._queue_w.put(self._config_general_local_ctrl.send())
         # wait until all data is received/initialized
         print("Waiting to syncronize config variables...")
         init_event.wait()
         print("Conected, config variables synced")
         init_event.clear()
+
     def _ping_r_timer(self):
         """Send a ping to the system once a second to keep the connection alive."""
         while not self._stop:
@@ -224,7 +225,6 @@ class MCL:
         # sending pring %i" % self.ping_i_r
         self._sock_r.sendall(self._ping_i_r.to_bytes(4, byteorder='big', signed=False))
         self._ping_i_r += 1
-
 
     def _ping_w_r(self):
         chunks = bytearray()
@@ -244,7 +244,7 @@ class MCL:
         chunks = bytearray()
         while not self._stop:
             tosend = self._queue_w.get()
-            if tosend != b'': # skip zero bytes, used for for disconnecting
+            if tosend != b'':  # skip zero bytes, used for for disconnecting
                 self._sock_w.sendall(tosend)
             self._queue_w.task_done()
 
@@ -254,15 +254,15 @@ class MCL:
         min_len = 7
         datalen = 0
         datakind = 0
-        datatype = 0 # Controls = 0, Indicators = 1, Config = 2, Lock-in Data = 3, Waveforms = 4
+        datatype = 0  # Controls = 0, Indicators = 1, Config = 2, Lock-in Data = 3, Waveforms = 4
 
         # check if datatypes are initiated, then notify init_event
         num_datatypes = [0, 0, 137, 2, 2]
-        initiated_datatypes = [ [], [], [False] * num_datatypes[2], [False] * num_datatypes[3], [False] * num_datatypes[4] ]
+        initiated_datatypes = [[], [], [False] * num_datatypes[2], [False] * num_datatypes[3],
+                               [False] * num_datatypes[4]]
         is_initiated = False
 
-
-        while  not self._stop:
+        while not self._stop:
             # wating for data
             chunk = self._sock_r.recv(10000)
             # received data length = %i" %len(chunk)
@@ -271,17 +271,17 @@ class MCL:
             chunks += bytearray(chunk)
             # wait until full dataset is received
             while len(chunks) >= min_len:
-                if(wait_for_header):
+                if (wait_for_header):
                     datatype = int.from_bytes(chunks[0:1], byteorder='big', signed=False)
                     datakind = int.from_bytes(chunks[1:3], byteorder='big', signed=False)
-                    datalen  = int.from_bytes(chunks[3:7], byteorder='big', signed=False)
+                    datalen = int.from_bytes(chunks[3:7], byteorder='big', signed=False)
                     del chunks[0:7]
                     min_len = datalen
                     wait_for_header = False
                 if not wait_for_header and len(chunks) >= min_len:
                     if not is_initiated:
                         initiated_datatypes[datatype][datakind] = True
-#                        if initiated_datatypes[2].count(True) + initiated_datatypes[3].count(True) + initiated_datatypes[4].count(True) >= sum(num_datatypes):
+                        #                        if initiated_datatypes[2].count(True) + initiated_datatypes[3].count(True) + initiated_datatypes[4].count(True) >= sum(num_datatypes):
                         if initiated_datatypes[2].count(True) >= num_datatypes[2]:
                             is_initiated = True
                             init_event.set()
@@ -291,11 +291,10 @@ class MCL:
                     dst = self._get_class(datatype, datakind)
                     if dst:
                         dst.receive(data)
-                    
+
                     wait_for_header = True
                     min_len = 7
                     del chunks[0:datalen]
-
 
     def disconnect(self):
         """Disconnect from the MCL system
@@ -316,6 +315,3 @@ class MCL:
         self._sock_w.close()
         self._ping_i_r = 0
         self._ping_i_w = 0
-
-
-
