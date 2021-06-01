@@ -19,7 +19,7 @@ sys.path.insert(0, os.path.abspath('../../'))
 
 project = 'Instruments'
 copyright = '2021, Stu Poole (GitHub: StuPoole)'
-author = 'Stu Poole (GitHub: StuPoole)'
+author = 'Stu Poole (GitHub: stupoole)'
 
 # The full version, including alpha/beta/rc tags
 release = '0.1'
