@@ -1,9 +1,9 @@
-import instruments
+import Instruments
 import time
 
-lockinA = instruments.Model_5210()
-lockinB = instruments.Model_5210()
-ac = instruments.K6221()
+lockinA = Instruments.Model_5210()
+lockinB = Instruments.Model_5210()
+ac = Instruments.K6221()
 
 lockinA.connect(6)
 lockinB.connect(9)
@@ -27,8 +27,8 @@ ac.close()
 
 
 
-import instruments
-lockinA = instruments.Model_5210()
+import Instruments
+lockinA = Instruments.Model_5210()
 lockinA.connect(6)
 
 

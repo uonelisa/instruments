@@ -1,4 +1,4 @@
-import instruments
+import Instruments
 
 import numpy as np
 import matplotlib.pyplot as plt
@@ -21,7 +21,7 @@ loop_delay = 10
 
 current = np.tile(np.linspace(start, stop, round((stop - start) / step) + 1), repeats)
 
-source = instruments.K6221_Ethernet()
+source = Instruments.K6221_Ethernet()
 source.connect()
 source.set_compliance(40)
 source.set_sense_chan_and_range(channel, volt_range)

@@ -6,10 +6,19 @@ __all__ = ['Prologix', 'SR830', 'Model_5210', 'SR830_RS232']
 
 
 class Prologix:
+    """
+    Defines constant values on object instantiation and also connects because thsi will be made during the
+    lock-in's connect call
+    """
 
-    # Defines constant values on object instantiation and also connects because thsi will be made during the
-    # lock-in's connect call
     def __init__(self, port, address):
+        """
+
+        :param int port:
+        :param int address:
+
+        :returns: None
+        """
         self.address = 0
         self.baud_rate = 19200
         self.address = address
@@ -30,8 +39,10 @@ class Prologix:
     def write(self, string):
         """
         Writes a command to the desired object using prologix
+
         :param str string: The message to be sent
-        :return:
+
+        :returns: None
         """
         self.prolog.write(f'++addr {self.address}')
         self.prolog.write(string)
@@ -40,8 +51,10 @@ class Prologix:
     def query_ascii_values(self, string):
         """
         sends a command to the lockin and reads some data to the desired object using prologix
+
         :param str string:
-        :return:
+
+        :returns: None
         """
         self.prolog.write(f'++addr {self.address}')
         self.prolog.write(string)
@@ -51,8 +64,10 @@ class Prologix:
     def query(self, string):
         """
         # Is supposed to read data after sending a command but seems broken
+
         :param str string:
-        :return:
+
+        :returns: None
         """
         self.prolog.write(f'++addr {self.address}')
         self.prolog.write(string)
@@ -267,6 +282,9 @@ class SR830_RS232:
 
 
 class Model_5210:
+    """
+    Work in porgress class to interface with the Synktek MCL model 5210 via ethernet.
+    """
     def __init__(self):
         self.time_constants = [1e-3, 3e-3, 1e-2, 3e-2, 1e-1, 3e-1, 1, 3, 1e1, 3e1, 1e2, 3e2, 1e3, 3e3]
         self.sensitivities = [1e-9, 3e-9, 1e-8, 3e-8, 1e-7, 3e-7, 1e-6, 3e-6, 1e-5, 3e-5, 1e-4, 3e-4, 1e-3, 3e-3, 1e-2,

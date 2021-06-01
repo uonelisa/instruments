@@ -1,5 +1,6 @@
 import tkinter.messagebox as mb
 import winsound
+import os
 
 import numpy as np
 import paramiko
@@ -8,11 +9,11 @@ __all__ = ['error_sound', 'alert_sound', 'RedPitaya']
 
 
 def error_sound():
-    winsound.PlaySound('C:\Windows\Media\Windows Background.wav', winsound.SND_FILENAME)
+    winsound.PlaySound(os.path.abspath('Windows Background.wav'), winsound.SND_FILENAME)
 
 
 def alert_sound():
-    winsound.PlaySound('C:\Windows\Media\Windows Notify System Generic.wav', winsound.SND_FILENAME)
+    winsound.PlaySound(os.path.abspath('Windows Notify System Generic.wav'), winsound.SND_FILENAME)
 
 
 class RedPitaya:
