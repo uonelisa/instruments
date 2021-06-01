@@ -37,7 +37,7 @@ pg = Instruments.K2461()
 
 
 sb.connect(15)
-source.connect(16)
+source.connect_RS232(16)
 top_lockin.connect(6)
 bot_lockin.connect(10)
 pg.connect()

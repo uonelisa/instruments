@@ -466,12 +466,12 @@ class MyGUI(QtWidgets.QMainWindow):
 
     def connect_signals(self):
         # Connect gui elements to slots.
-        self.pulse_type_combobox.currentTextChanged.connect(self.on_mode_changed)
-        self.start_button.clicked.connect(self.on_start)
-        self.start_res_button.clicked.connect(self.on_res_measurement)
-        self.stop_button.clicked.connect(self.on_stop)
-        self.temperature_control_combo.currentIndexChanged.connect(self.on_temp_control_changed)
-        self.temperature_control_button.clicked.connect(self.on_temp_start_stop)
+        self.pulse_type_combobox.currentTextChanged.connect_ethernet(self.on_mode_changed)
+        self.start_button.clicked.connect_ethernet(self.on_start)
+        self.start_res_button.clicked.connect_ethernet(self.on_res_measurement)
+        self.stop_button.clicked.connect_ethernet(self.on_stop)
+        self.temperature_control_combo.currentIndexChanged.connect_ethernet(self.on_temp_control_changed)
+        self.temperature_control_button.clicked.connect_ethernet(self.on_temp_start_stop)
         self.thread = QtCore.QThread()
         self.data_collector = DataCollector()
         self.data_collector.moveToThread(self.thread)

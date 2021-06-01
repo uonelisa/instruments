@@ -25,8 +25,8 @@ compliance = 105
 curr_list = np.array([I_pulse] + probe_count*[I_probe, -I_probe] + [-I_pulse] + probe_count*[I_probe, -I_probe])
 delay_list = np.array([pulse_delay] + 2*probe_count*[probe_delay] + [pulse_delay] + 2*probe_count*[probe_delay])
 
-source = Instruments.K6221_Ethernet()
-source.connect()
+source = Instruments.K6221()
+source.connect_ethernet()
 source.set_compliance(compliance)
 source.set_sense_chan_and_range(channel, volt_range)
 source.configure_switching_custom_sweep(curr_list, delay_list, compliance, repeats)

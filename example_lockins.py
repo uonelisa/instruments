@@ -7,7 +7,7 @@ ac = Instruments.K6221()
 
 lockinA.connect(6)
 lockinB.connect(9)
-ac.connect(10)
+ac.connect_RS232(10)
 
 lockinA.set_sensitivity(3)
 lockinA.set_time_constant(1e-1)
