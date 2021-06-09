@@ -1,4 +1,4 @@
-import visa
+import pyvisa
 import struct
 
 __all__ = ['TEC1089SV']
@@ -65,7 +65,7 @@ class TEC1089SV:
 
         :returns: None
         """
-        rm = visa.ResourceManager('@ni')
+        rm = pyvisa.ResourceManager('@ivi')
         self.__tec = rm.open_resource(f'COM{port}', baud_rate=19200)
         self.__tec.close()
         self.__tec.open()

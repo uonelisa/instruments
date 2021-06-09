@@ -1,4 +1,4 @@
-import visa
+import pyvisa
 import numpy as np
 import time
 import matplotlib.pyplot as plt
@@ -11,7 +11,7 @@ pg.pulse_current(1e-3, 1e-3)
 time.sleep(5)
 
 # how to use buffer measurements
-pg.measure_n(100e-6, 50, 2)
+pg.prepare_measure_n(100e-6, 50, 2)
 pg.trigger()
 time.sleep(10)
 time, v, c = pg.read_buffer(50)

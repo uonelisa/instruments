@@ -1,4 +1,4 @@
-import visa
+import pyvisa
 import numpy as np
 
 __all__ = ['K2000']
@@ -17,7 +17,7 @@ class K2000:
 
         :returns: None
         """
-        rm = visa.ResourceManager('@ni')
+        rm = pyvisa.ResourceManager('@ivi')
         self.k2000 = rm.open_resource(f'COM{port}', baud_rate=19200)
         self.k2000.close()
         self.k2000.open()

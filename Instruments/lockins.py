@@ -1,4 +1,4 @@
-import visa
+import pyvisa
 import numpy as np
 import time
 
@@ -22,7 +22,7 @@ class Prologix:
         self.address = 0
         self.baud_rate = 19200
         self.address = address
-        rm = visa.ResourceManager('@ni')
+        rm = pyvisa.ResourceManager('@ivi')
         self.prolog = rm.open_resource(f'COM{port}', baud_rate=self.baud_rate)
         self.prolog.close()
         self.prolog.open()
@@ -292,7 +292,7 @@ class SR830_RS232:
 
         :returns: None
         """
-        rm = visa.ResourceManager('@ni')
+        rm = pyvisa.ResourceManager('@ivi')
         self.lockin = rm.open_resource(f'COM{port}', baud_rate=19200)
         self.lockin.close()
         self.lockin.open()

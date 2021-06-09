@@ -12,6 +12,7 @@ to go into each file individually
 from .multimeters import *
 from .lockins import *
 from .redpitaya import *
+from .sounds import *
 from .switchbox import *
 from .sourcemeters import *
 from .temperaturecontrollers import *

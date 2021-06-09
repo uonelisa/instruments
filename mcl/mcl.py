@@ -7,7 +7,7 @@ import binascii
 import time
 import json
 
-from .mcl_config import MCL_Config_GeneralLocal_Ctrl, MCL_Config_GeneralPic_Ctrl
+from .mcl_config import MCL_Config_Frequency_Ctrl, MCL_Config_GeneralLocal_Ctrl, MCL_Config_GeneralPic_Ctrl
 from .mcl_lidata import MCL_LiData_DataReadings
 from .mcl_scope import MCL_Scope, MCL_FFT
 
@@ -18,8 +18,8 @@ class MCL:
     SynkTek AB, SWEDEN
     Holger Motzkau
     info@synktek.com
-    version 0.1
-    2021-05-19
+    version 0.2
+    2021-05-26
 
 
     Properties
@@ -42,12 +42,19 @@ class MCL:
 
     def __init__(self):
         self._stop = False  # true to stop communication in different threads
-        # ping counters for read and write connections
-        self._ping_i_r = 0
-        self._ping_i_w = 0
+        # ping counter for write connection
+        self._ping_i_write = 0
         # write command queue
-        self._queue_w = queue.Queue()
+        self._queue_write = queue.Queue()
 
+        self._config_frequency_ctrl_f1 = MCL_Config_Frequency_Ctrl(0)
+        self._config_frequency_ctrl_f2 = MCL_Config_Frequency_Ctrl(1)
+        self._config_frequency_ctrl_f3 = MCL_Config_Frequency_Ctrl(2)
+        self._config_frequency_ctrl_f4 = MCL_Config_Frequency_Ctrl(3)
+        self._config_frequency_ctrl_f5 = MCL_Config_Frequency_Ctrl(4)
+        self._config_frequency_ctrl_f6_pll1 = MCL_Config_Frequency_Ctrl(5)
+        self._config_frequency_ctrl_f7_pll2 = MCL_Config_Frequency_Ctrl(6)
+        self._config_frequency_ctrl_f8_comp1 = MCL_Config_Frequency_Ctrl(7)
         self._config_general_pic_ctrl = MCL_Config_GeneralPic_Ctrl()
         self._config_general_local_ctrl = MCL_Config_GeneralLocal_Ctrl()
         self._lidata_data_readings_l1 = MCL_LiData_DataReadings(0)
@@ -57,6 +64,14 @@ class MCL:
 
         self._dests = {}
         all_subclasses = [
+            self._config_frequency_ctrl_f1,
+            self._config_frequency_ctrl_f2,
+            self._config_frequency_ctrl_f3,
+            self._config_frequency_ctrl_f4,
+            self._config_frequency_ctrl_f5,
+            self._config_frequency_ctrl_f6_pll1,
+            self._config_frequency_ctrl_f7_pll2,
+            self._config_frequency_ctrl_f8_comp1,
             self._config_general_pic_ctrl,
             self._config_general_local_ctrl,
             self._lidata_data_readings_l1,
@@ -65,19 +80,29 @@ class MCL:
             self._fft
         ]
         for x in all_subclasses:
-            self._add_class(x)
+            self._add_dest_class(x)
 
     # print(self._dests)
 
-    def _add_class(self, x):
+    def _add_dest_class(self, x):
         # print('adding dest %i : %i' % (x.datatype, x.datakind))
         self._dests[(x.datatype, x.datakind)] = x
 
-    def _get_class(self, datatype, datakind):
+    def _get_dest_class(self, datatype, datakind):
         try:
             return self._dests[datatype, datakind]
         except:
             return False
+
+    @property
+    def config_frequency_ctrl_f1(self):
+        "Frequency 1."
+        return self._config_frequency_ctrl_f1
+
+    @config_frequency_ctrl_f1.setter
+    def config_frequency_ctrl_f1(self, value):
+        self._config_frequency_ctrl_f1.val = value
+        self._queue_write.put(self._config_frequency_ctrl_f1.send())
 
     @property
     def config_general_pic_ctrl(self):
@@ -176,62 +201,60 @@ class MCL:
         """
 
         # Create a TCP/IP socket
-        self._sock_r = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        self._sock_w = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        # read data from system, write data to system
+        self._sock_read = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self._sock_write = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
         # event to notify when all variables from the lockin are initilized
         init_event = threading.Event()
 
         # connect socket to the port
-        self._server_address_r = (mcl_ip, 46000)
-        self._server_address_w = (mcl_ip, 46001)
-        print('connecting to %s port %s' % self._server_address_r, file=sys.stderr)
+        self._server_address_read = (mcl_ip, 46000)
+        self._server_address_write = (mcl_ip, 46001)
+        print('connecting to %s port %s' % self._server_address_read, file=sys.stderr)
         try:
-            self._sock_r.connect(self._server_address_r)
+            self._sock_read.connect(self._server_address_read)
         except:
             print("Error: cannot open socket.")
             time.sleep(1)
             quit()
-        print('connecting to %s port %s' % self._server_address_w, file=sys.stderr)
-        self._sock_w.connect(self._server_address_w)
+        print('connecting to %s port %s' % self._server_address_write, file=sys.stderr)
+        self._sock_write.connect(self._server_address_write)
         # start communication threads
-        # reading: send ping
-        threading.Thread(target=self._ping_r_timer, daemon=True).start()
+        # reading: send ping to keep read connection
+        threading.Thread(target=self._ping_read_timer, daemon=True).start()
         # reading: read data
-        threading.Thread(target=self._data_r, daemon=True, args=[init_event]).start()
-        # sending: read ping
-        threading.Thread(target=self._ping_w_r, daemon=True).start()
+        threading.Thread(target=self._data_read, daemon=True, args=[init_event]).start()
+        # sending: read ping for write connection
+        threading.Thread(target=self._ping_write_receive, daemon=True).start()
         # sendimg: send data
-        threading.Thread(target=self._data_w, daemon=True).start()
+        threading.Thread(target=self._data_write, daemon=True).start()
         # trigger update of user variables
         time.sleep(1)
         self._config_general_local_ctrl.val = self._config_general_local_ctrl.val._replace(updateuser=True)
-        self._queue_w.put(self._config_general_local_ctrl.send())
+        self._queue_write.put(self._config_general_local_ctrl.send())
         # wait until all data is received/initialized
         print("Waiting to syncronize config variables...")
         init_event.wait()
         print("Conected, config variables synced")
         init_event.clear()
 
-    def _ping_r_timer(self):
+    def _ping_read_timer(self):
         """Send a ping to the system once a second to keep the connection alive."""
+        ping_i = 0
         while not self._stop:
             # running timer
             time.sleep(1)
-            self._ping_r()
+            # sending ping %i" % ping_i
+            self._sock_read.sendall(ping_i.to_bytes(4, byteorder='big', signed=False))
+            ping_i += 1
 
-    def _ping_r(self):
-        """Send the ping/increasing integer to the system. Sending a zero resets the connection."""
-        # sending pring %i" % self.ping_i_r
-        self._sock_r.sendall(self._ping_i_r.to_bytes(4, byteorder='big', signed=False))
-        self._ping_i_r += 1
-
-    def _ping_w_r(self):
+    def _ping_write_receive(self):
         chunks = bytearray()
         bytes_recd = 0
         while not self._stop:
             # waiting for ping
-            chunk = self._sock_w.recv(4)
+            chunk = self._sock_write.recv(4)
             if chunk == b'':
                 raise RuntimeError("socket connection broken")
             chunks += bytearray(chunk)
@@ -240,31 +263,31 @@ class MCL:
                 i = int.from_bytes(chunks[0:4], byteorder='big', signed=False)
                 del chunks[0:4]
 
-    def _data_w(self):
+    def _data_write(self):
         chunks = bytearray()
         while not self._stop:
-            tosend = self._queue_w.get()
+            tosend = self._queue_write.get()
             if tosend != b'':  # skip zero bytes, used for for disconnecting
-                self._sock_w.sendall(tosend)
-            self._queue_w.task_done()
+                self._sock_write.sendall(tosend)
+            self._queue_write.task_done()
 
-    def _data_r(self, init_event):
+    def _data_read(self, init_event):
         chunks = bytearray()
         wait_for_header = True
         min_len = 7
         datalen = 0
-        datakind = 0
+        datakind = 0 #
         datatype = 0  # Controls = 0, Indicators = 1, Config = 2, Lock-in Data = 3, Waveforms = 4
 
         # check if datatypes are initiated, then notify init_event
-        num_datatypes = [0, 0, 137, 2, 2]
+        num_datatypes = [0, 0, 137, 2, 2] # how many kinds in each datatype
         initiated_datatypes = [[], [], [False] * num_datatypes[2], [False] * num_datatypes[3],
                                [False] * num_datatypes[4]]
         is_initiated = False
 
         while not self._stop:
             # wating for data
-            chunk = self._sock_r.recv(10000)
+            chunk = self._sock_read.recv(10000)
             # received data length = %i" %len(chunk)
             if chunk == b'':
                 raise RuntimeError("socket connection broken")
@@ -288,12 +311,14 @@ class MCL:
 
                     data = chunks[0:datalen]
 
-                    dst = self._get_class(datatype, datakind)
-                    if dst:
-                        dst.receive(data)
+                    dest = self._get_dest_class(datatype, datakind)
+                    if dest:
+                        dest.receive(data)
 
                     wait_for_header = True
                     min_len = 7
+                    print('data kind: ', datakind, flush=True)
+                    print('data type: ', datatype, flush=True)
                     del chunks[0:datalen]
 
     def disconnect(self):
@@ -309,9 +334,8 @@ class MCL:
         """
 
         self._stop = True
-        self._queue_w.put(bytearray())
+        self._queue_write.put(bytearray())
         time.sleep(2)
-        self._sock_r.close()
-        self._sock_w.close()
-        self._ping_i_r = 0
-        self._ping_i_w = 0
+        self._sock_read.close()
+        self._sock_write.close()
+        self._ping_i_write = 0

@@ -1,0 +1,7 @@
+pypyvisa
+pyserial
+numpy
+TK
+
+
+

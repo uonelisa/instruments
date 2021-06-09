@@ -1,5 +1,5 @@
 import numpy as np
-import visa
+import pyvisa
 import time
 
 __all__ = ['DS1104']
@@ -13,7 +13,7 @@ class DS1104:
         resets the scope.
         :return: null
         """
-        rm = visa.ResourceManager('@ni')
+        rm = pyvisa.ResourceManager('@ivi')
         self.scope = rm.open_resource('USB0::0x1AB1::0x04CE::DS1ZB192600334::INSTR')
         self.scope.timeout = 50000
         print('connected to: ', self.scope.query('*idn?'))
