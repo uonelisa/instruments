@@ -2,19 +2,21 @@ import visa
 import numpy as np
 import time
 
-__all__ = ['K2400', 'K2401', 'K2461', 'K6221', 'K6221_Ethernet', 'K6221_GPIB']
+__all__ = ['K2400', 'K2401', 'K2461', 'K6221']
 
 
 class K2400:
     """
-    Keithley 2400 control interface designed for use when switching
+    Keithley 2400 control interface using RS232 connection, designed for use when switching
     """
 
     def connect(self, port):
         """
         connects to the instrument with baud rate 19200 and timeout 10s. prints IDN.
+
         :param int port: the COM port number i.e. 3 for COM3
-        :return:
+
+        :returns: None
         """
         rm = visa.ResourceManager('@ni')
         self.k2400 = rm.open_resource(f'COM{port}', baud_rate=19200)
@@ -32,8 +34,10 @@ class K2400:
     def pulse_current(self, current):
         """
         Sends a square pulse of 5ms duration and specified amplitude Amps
+
         :param float current: current in AMPS
-        :return:
+
+        :returns: None
         """
         self.k2400.write('*rst')
         self.k2400.write(':SYSTEM:BEEP:STATE OFF')
@@ -56,10 +60,12 @@ class K2400:
     def measure_n(self, current, num, nplc=2):
         """
         Measure many points in 4 wire mode. Use with "trigger" and "read buffer"
+
         :param float current: the source current for 4wire measurements
         :param float num: number of points to measure
         :param float nplc: number of powerline cycles per measurement
-        :return:
+
+        :returns: None
         """
         self.k2400.write('*rst')
         self.k2400.write('*cls')
@@ -84,7 +90,8 @@ class K2400:
     def trigger(self):
         """
         Send the command to start measurements and wait to finish before processing further commands.
-        :return:
+
+        :returns: None
         """
         self.k2400.write('init')
         self.k2400.write('*wai')
@@ -92,7 +99,8 @@ class K2400:
     def read_buffer(self):
         """
         Disables output current and then reads all data from the buffer in the format: current, voltage, time, current voltage time...
-        :return: time, voltage, current. Use v/c to get resistance.
+
+        :returns: time, voltage, current. Use v/c to get resistance.
         :rtype: (np.ndarray, np.ndarray, np.ndarray)
         """
         self.k2400.write('outp off')
@@ -105,18 +113,25 @@ class K2400:
     def close(self):
         """
         Closes the instrument, i.e. frees the port up for other applications/threads. Also disables output.
-        :return:
+
+        :returns: None
         """
         self.k2400.write('outp off')
         self.k2400.close()
 
 
 class K2401:
+    """
+    Keithley 2401 control interface using RS232 connection, designed for use when switching
+    """
+
     def connect(self, port):
         """
         connects to the instrument with baud rate 19200 and timeout 10s. prints IDN.
+
         :param port: int, the COM port number i.e. 3 for COM3
-        :return:
+
+        :returns: None
         """
         rm = visa.ResourceManager('@ni')
         self.k2401 = rm.open_resource(f'COM{port}', baud_rate=19200)
@@ -133,8 +148,10 @@ class K2401:
     def pulse_current(self, current):
         """
         Sends a square pulse of 5ms duration and specified amplitude Amps
+
         :param current: float, current in AMPS
-        :return:
+
+        :returns: None
         """
         self.k2401.write('*rst')
         self.k2401.write('trac:cle')
@@ -156,10 +173,12 @@ class K2401:
     def measure_n(self, current, num, nplc=2):
         """
         Measure many points in 4 wire mode. Use with "trigger" and "read buffer"
+
         :param current: float, the source current for 4wire measurements
         :param num: float/int, number of points to measure
         :param nplc: float/int, number of powerline cycles per measurement
-        :return:
+
+        :returns: None
         """
         self.k2401.write('*rst')
         self.k2401.write('*cls')
@@ -183,7 +202,8 @@ class K2401:
     def trigger(self):
         """
         Send the command to start measurements and wait to finish before processing further commands.
-        :return:
+
+        :returns: None
         """
         self.k2401.write('init')
         self.k2401.write('*wai')
@@ -192,7 +212,8 @@ class K2401:
     def read_buffer(self):
         """
         Disables output current and then reads all data from the buffer in the format: current, voltage, time, current voltage time...
-        :return: time, voltage, current. Use v/c to get resistance.
+
+        :returns: time, voltage, current. Use v/c to get resistance.
         :rtype: (np.ndarray, np.ndarray, np.ndarray)
         """
         self.k2401.write('outp off')
@@ -205,19 +226,24 @@ class K2401:
     def close(self):
         """
         Closes the instrument, i.e. frees the port up for other applications/threads. Also disables output.
-        :return:
+
+        :returns: None
         """
         self.k2401.write('outp off')
         self.k2401.close()
 
 
 class K2461:
+    """
+    Keithley 2461 control interface using USB_VISA connection, designed for use when switching
+    """
 
     def connect(self):
         """
         Connects to our Keithley 2461 sourcemeter instrument using the known unique identifier. Sets timeout to 50 seconds and
         resets the instrument.
-        :return:
+
+        :returns: None
         """
         rm = visa.ResourceManager('@ni')
         self.k2461 = rm.open_resource('USB0::0x05E6::0x2461::04121022::INSTR', write_termination='\n', send_end=True)
@@ -228,10 +254,12 @@ class K2461:
     def prepare_pulsing_voltage(self, voltage, width, clim=100e-3):
         """
         Forms a voltage pulse trigger group for the instrument.See also: send_pulse and set_ext_trig()
+
         :param float voltage: The desired peak voltage of the sample in volts
         :param float width: The duration of the rise time and plateau in seconds
         :param float clim: The current limit for the pulse def:100mA
-        :return:
+
+        :returns: None
         """
         self.k2461.write('*rst')
         self.k2461.write(
@@ -241,10 +269,12 @@ class K2461:
     def prepare_pulsing_current(self, current, width, vlim=40):
         """
         Forms a current pulse trigger group for the instrument. See also: send_pulse and set_ext_trig()
+
         :param float current: Desired peak current in AMPS (please use 1e-3 for milliamps for eg.
         :param float width: Duration of pulse rise and plateau time in seconds
         :param float vlim: The voltage limit for the pulse def: 40V
-        :return:
+
+        :returns: None
         """
         self.k2461.write('*rst')
         self.k2461.write(
@@ -254,9 +284,11 @@ class K2461:
         """
         Configures the DIO pins on the instrument to send an external positive edges pulse to occur just before the
         voltage pulse is sent to the DUT
+
         :param pin: int/float the DIO pin on the instrument that is connected to the stinger on the BNC cable for the
                     scope (default 3). The script will work without a scope connected, of course.
-        :return:
+
+        :returns: None
         """
         # todo(stu) figure out how to avoid the k2461 warning about pulse width.
         self.k2461.write(f'dig:line{pin}:mode trig, out')
@@ -269,18 +301,21 @@ class K2461:
         """
         Activates the preloaded trigger group from prepare_pulsing_voltage or prepare_pulsing_current to emit a pulse
         and (if configured) an external trigger
-        :return:
+
+        :returns: None
         """
         self.k2461.write('init')  # send pulse
 
     def measure_n(self, current, num, nplc=2):
         """
-        Prepares the instruments to measure specified number of points in a 4wire resistance configuration. Use trigger
+        Prepares the Instruments to measure specified number of points in a 4wire resistance configuration. Use trigger
         start the measurement and read_buffer to collect the data. This does not enable probe current.
+
         :param float current: probing current amplitude in amps
         :param float num: number of points to measure
         :param float nplc: number of powerline cycles per point def: 2
-        :return:
+
+        :returns: None
         """
         self.k2461.write('*rst')
         self.k2461.write(f'trac:make "mybuffer", {num}')
@@ -298,9 +333,11 @@ class K2461:
         """
         Prepares the instrument to measure a 4wire resistance one at a time. For use with either trigger_fetch and
         fetch_one or with read_one. This enables probe current.
+
         :param float current:
         :param float nplc:
-        :return:
+
+        :returns: None
         """
         self.k2461.write('sens:func "volt"')
         self.k2461.write('sens:volt:rang:auto on')
@@ -319,9 +356,11 @@ class K2461:
         """
         Prepares the instrument to measure a 2wire resistance one at a time. For use with either trigger_fetch and
         fetch_one or with read_one. This enables probe current.
+
         :param float current: probing current in amps
         :param float nplc: number of powerline cycles to measure for
-        :return:
+
+        :returns: None
         """
         self.k2461.write('sens:func "volt"')
         self.k2461.write('sens:volt:rang:auto on')
@@ -337,7 +376,8 @@ class K2461:
         """
         Starts applying current and initiates the measurement set up using measure_n. Also use read_buffer then
         disable_probe_current.
-        :return:
+
+        :returns: None
         """
         # self.k2461.write('init')
         self.k2461.write('outp on')
@@ -346,9 +386,10 @@ class K2461:
 
     def trigger_fetch(self):
         """
-        Triggers a single measurement for reading back off later. Use for higher synchronicity between instruments.
+        Triggers a single measurement for reading back off later. Use for higher synchronicity between Instruments.
         Use fetch_one to get the data. See also: read_one
-        :return:
+
+        :returns: None
         """
         self.k2461.write('trac:trig "defbuffer1"')
         self.k2461.write('*wai')
@@ -356,8 +397,10 @@ class K2461:
     def read_buffer(self, num):
         """
         Reads a specified number of points from the buffer and returns the data as numpy arrays
+
         :param float num: number of points to be read
-        :return: time relative to trigger, voltage, current. Use v/c to resistance.
+
+        :returns: time relative to trigger, voltage, current. Use v/c to resistance.
         :rtype: (np.ndarray, np.ndarray, np.ndarray)
         """
         self.k2461.write('outp off')
@@ -375,7 +418,8 @@ class K2461:
         """
         Measures, reads and returns a single value from the instrument. For use with enable_2_wire_probe and
         enable_4_wire_probe. To measure and read separately, see trigger_fetch and fetch_one
-        :return: current, voltage. Do v/c for resistance
+
+        :returns: current, voltage. Do v/c for resistance
         :rtype: (float, float)
         """
         data = np.array([self.k2461.query_ascii_values('read? "defbuffer1", sour, read')])
@@ -388,7 +432,8 @@ class K2461:
         """
         Reads and returns a single value from the instrument. For use with trigger_fetch and either enable_2_wire_probe
         or enable_4_wire_probe.
-        :return: current, voltage. Do v/c for resistance
+
+        :returns: current, voltage. Do v/c for resistance
         :rtype: (float, float)
         """
         data = self.k2461.query_ascii_values('fetch? "defbuffer1", sour, read')
@@ -397,14 +442,16 @@ class K2461:
     def disable_probe_current(self):
         """
         Stops the instrument from outputting current. Same as hitting "output on/off" on the front IO.
-        :return:
+
+        :returns: None
         """
         self.k2461.write('outp off')
 
     def close(self):
         """
         Closes the instrument connection, i.e. frees the port up for other applications/threads. Also disables output.
-        :return:
+
+        :returns: None
         """
         self.k2461.write('*rst')
         self.k2461.write('*sre 0')
@@ -412,21 +459,87 @@ class K2461:
         self.k2461.close()
 
 
-class K6221_Ethernet:
+class K6221:
+    """
+    Keithley 6221 control interface using Ethernet, RS232 or GPIB connection, designed for use in delta pulsing or
+    second harmonic measurements
+    """
 
-    def connect(self):
+    def connect_ethernet(self, IP='192.168.0.10'):
+        """
+        Connect to the instrument using ethernet port
+
+        :param str IP: IP address of the instrument
+
+        :returns: None
+        """
         self.rm = visa.ResourceManager('@ni')
-        self.K6221 = self.rm.open_resource("TCPIP::192.168.0.10::1394::SOCKET", write_termination='\r\n',
+        self.K6221 = self.rm.open_resource(f'TCPIP::{IP}::1394::SOCKET', write_termination='\r\n',
                                            read_termination='\n', timeout=10000)
         self.K6221.write('source:sweep:abort')
         self.K6221.write('*rst')
         self.K6221.write('*cls')
         # self.K6221.timeout = 10000
 
+    def connect_GPIB(self, addr=12):
+        """
+        Connect to the instrument using GPIB connector
+
+        :param int addr: address of the instrument
+
+        :returns: None
+        """
+        self.addr = addr
+        self.rm = visa.ResourceManager('@ni')
+        self.K6221 = self.rm.open_resource(f'GPIB0::{self.addr}::INSTR', read_termination='\n', timeout=10000)
+        self.K6221.write('abort')
+        self.K6221.write('*rst')
+        self.K6221.write('*cls')
+        self.K6221.write('display:enable 0')
+        self.send_to_2182A('display:enable 0')
+
+    def connect_RS232(self, port):
+        """
+        Connects to device using RS232 port with baud rate of 19.2K
+
+        :param int port: The COM port number e.g. for COM16, port = 16
+
+        :returns: None
+        """
+        rm = visa.ResourceManager('@ni')
+        self.K6221 = rm.open_resource(f'COM{port}', baud_rate=19200)
+        self.K6221.close()
+        self.K6221.open()
+        self.K6221.baud_rate = 19200
+        self.K6221.timeout = 10000
+        self.K6221.write_termination = '\r\n'
+        self.K6221.read_termination = '\r\n'
+        self.K6221.write('*rst')
+        self.K6221.write('*cls')
+        print('connected to: ', self.K6221.query('*IDN?'))
+
     def set_compliance(self, volts):
+        """
+        Sets compliance voltage
+
+        :param float volts: Compliance limit in volts
+
+        :returns:
+        """
         self.K6221.write(f'source:current:compliance {volts}')
 
     def configure_pulse(self, width, count, n_low=2):
+        """
+        Configure a single value pulse train for use with pulse delta measurements. Sense delay is always set to
+        half the width. You must set the output amplitude elsewhere (not implemented, we used front panel control).
+        Use before arm_pulse_sweep, trigger and get_trace.
+
+        :param float width: duration of the pulse high stage in seconds
+        :param int count: number of pulses to send
+        :param int n_low: number of measurements to take at the low value (1 or 2).
+
+        :returns: None
+        """
         self.K6221.write(f'source:pdelta:sweep on')
         self.K6221.write(f'source:pdelta:width {width}')
         self.K6221.write(f'source:pdelta:count {count}')
@@ -434,6 +547,20 @@ class K6221_Ethernet:
         self.K6221.write(f'source:pdelta:sdelay {width / 2}')
 
     def configure_linear_sweep(self, start, stop, step, delay, count, ranging='best'):
+        """
+        Configures the instrument to send a set of pules with linearly increasing amplitudes. Cannot be used to do
+        decreasing sweep. For this, use configure_custom_sweep.
+        Use before arm_pulse_sweep, trigger and get_trace.
+
+        :param float start: first current amplitude in Amps
+        :param float stop: last current amplitude in Amps
+        :param float step: current step amount in Ampls
+        :param float delay: delay between pulses in seconds
+        :param int count: number of repeats of the sweep to measure
+        :param str ranging: ranging mode ['auto', 'best', 'fixed'].
+
+        :returns: None
+        """
         self.K6221.write(f'source:sweep:spacing linear')
         self.K6221.write(f'source:current:start {start}')
         self.K6221.write(f'source:current:stop {stop}')
@@ -443,6 +570,19 @@ class K6221_Ethernet:
         self.K6221.write(f'source:sweep:ranging {ranging}')
 
     def configure_custom_sweep(self, sweep_list, delay, compliance, count, bias=0.0, ranging='best'):
+        """
+        Configures the instrument to send a set of pules with arbitrary amplitudes.
+        Use before arm_pulse_sweep, trigger and get_trace.
+
+        :param list-like sweep_list: list of pulse amplitudes in Amps
+        :param float delay: delay between pulses in seconds
+        :param float compliance: compliance limit in volts
+        :param int count: number of repeats of the sweep to measure
+        :param float bias: offset for the lo values (0.0 typically)
+        :param str ranging: ranging mode ['auto', 'best', 'fixed'].
+
+        :returns: None
+        """
         self.K6221.write(f'source:current {bias}')
         self.K6221.write('source:sweep:spacing list')
         self.K6221.write('source:list:current 0')
@@ -455,6 +595,19 @@ class K6221_Ethernet:
         self.K6221.write('source:sweep:cabort off')
 
     def configure_switching_custom_sweep(self, sweep_list, delay_list, compliance, count, bias=0, ranging='best'):
+        """
+        Configures the instrument to send a set of pules with arbitrary amplitudes but also with arbitrary delays
+        between pulses. Use before arm_pulse_sweep, trigger and get_trace.
+
+        :param list-like sweep_list: list of pulse amplitudes in Amps
+        :param list-like delay_list: list of corresponding delays between pulses
+        :param float compliance: compliance limit in volts
+        :param int count: number of repeats of the sweep to measure
+        :param float bias: offset for the lo values (0.0 typically)
+        :param str ranging: ranging mode ['auto', 'best', 'fixed'].
+
+        :returns: None
+        """
         self.K6221.write(f'source:current {bias}')
         self.K6221.write('source:sweep:spacing list')
         # Create list with first value then append all other values in the loop.
@@ -470,11 +623,29 @@ class K6221_Ethernet:
         self.K6221.write('source:sweep:cabort off')
 
     def arm_pulse_sweep(self):
+        """
+        Disables the screens to reduce jitter and arms the pulse sweeping ready for a trigger event.
+        Use after configuring a pulse sweep and before trigger. See also: get_trace.
+
+        :returns: None
+        """
         self.K6221.write('display:enable 0')
         self.send_to_2182A('display:enable 0')
         self.K6221.write(f'source:pdelta:arm')
 
     def configure_diff_conductance(self, start, stop, step, delta, delay):
+        """
+        Prepares the instrument for differential conductance measurement sweeps.
+        Use with arm_diff_cond, trigger and get_trace.
+
+        :param float start: starting current (Amps)
+        :param float stop: stopping current (Amps)
+        :param float step: current steps (Amps)
+        :param float delta: delta value (Amps) see manual for more info
+        :param float delay: time between measurements. Current is always on for this measurement so keep it short.
+
+        :returns: None
+        """
         self.K6221.write(f'source:dcon:start {start}')
         self.K6221.write(f'source:dcon:step {step}')
         self.K6221.write(f'source:dcon:stop {stop}')
@@ -482,36 +653,34 @@ class K6221_Ethernet:
         self.K6221.write(f'source:dcon:delay {delay}')
 
     def arm_diff_cond(self):
+        """
+        Disables the screens to reduce jitter and arms the diff conductance sweeping ready for a trigger event.
+        Use after configuring a diff cond sweep and before trigger. See also: get_trace.
+        :returns:
+        """
         self.K6221.write('display:enable 0')
         self.send_to_2182A('display:enable 0')
         self.K6221.write(f'source:dcon:arm')
 
     def trigger(self):
+        """
+        Triggers whatever output has been configured. Does not work with waves.
+
+        :returns: None
+        """
         self.K6221.write('INIT:IMM')
 
     def get_trace(self, delay=60):
+        """
+        Retrieves the measured values after an output sweep such as delta pulsing. It does this by waiting a while then
+        checking whether the instrument is still armed but waiting for a trigger event. If this is detected, the abort
+        command is sent and the data is retrieved.
 
-        # is_finished = False
-        # while not is_finished:
-        #     self.K6221.close()
-        #     time.sleep(delay)
-        #     self.K6221 = self.rm.open_resource("TCPIP::192.168.0.10::1394::SOCKET", write_termination='\r\n',
-        #                                        read_termination='\n', timeout=10000)
-        #     state = int(self.K6221.query('status:operation:cond?'))
-        #     is_finished = bin(state)[-2] == '1'
-        #     sweeping = bin(state)[-4] == '1'
-        #     aborted = bin(state)[-3] == '1'
-        #     if not sweeping:
-        #         print('Not sweeping or done?')
-        #     if aborted:
-        #         is_finished = True
-        #         print('apparently this sweep is aborted, script is ending measurement.')
-        #     print(f'state: {state}')
-        # print('Measurement Finished, Aborting wave')
-        # self.K6221.write(f'source:sweep:abort')
-        # time.sleep(1)
-        # print('reading data')
-        # data = self.K6221.query_ascii_values('trace:data?')
+        :param float delay: Time to wait between checking the instrument's state in seconds
+
+        :returns: the trace data
+        :rtype: np.ndarray
+        """
         start_time = time.time()
         is_finished = False
         while not is_finished:
@@ -534,12 +703,20 @@ class K6221_Ethernet:
         return np.array(data)
 
     def set_sense_chan_and_range(self, channel, volt_range):
+        """
+        Sets the 2182A's measurement channel and specifies the measurement range
+
+        :param int channel: measurement channel (1 or 2)
+        :param float volt_range: maximum voltage amplitude in Volts
+
+        :returns: None
+        """
         channel_comm = f'sense:channel {channel}'
         self.K6221.write(f'system:communicate:serial:send "{channel_comm}"')
 
         if volt_range == 'Auto' or volt_range == 'auto':
             range_comm = f'sense:voltage:channel{channel}:range:auto on'
-            self.K6221.write(f'system:communicate:serial:send "{range_comm}"')
+            self.send_to_2182A(range_comm)
         else:
             range_comm = f'sense:voltage:channel{channel}:range:auto off'
             self.send_to_2182A(range_comm)
@@ -547,15 +724,24 @@ class K6221_Ethernet:
             self.send_to_2182A(range_comm)
 
     def send_to_2182A(self, string):
+        """
+        Command used to send a command to the 2182A if attached.
+
+        :param str string: The command string to be send
+
+        :returns: None
+        """
         self.K6221.write(f'system:communicate:serial:send "{string}"')
 
     def sine_wave(self, hz, ma, duty=50):
         """
         Prepare the instrument to produce a sine wave output. Use with wave_output_on and wave_output_off
+
         :param hz: Frequency in Hz
         :param float ma: peak to peak amplitude in Milliamps
         :param duty: Duty cycle def: 50%
-        :return:
+
+        :returns: None
         """
         self.K6221.write('*RST')
         self.K6221.write('SOUR:WAVE:FUNC SIN')
@@ -564,6 +750,15 @@ class K6221_Ethernet:
         self.K6221.write('SOUR:WAVE:ARM')
 
     def set_phase_marker(self, enable=1, phase=0, pin=4):
+        """
+        Enable/disable the phase marker and set the phase and output pin
+
+        :param bool enable: enable (1) or disable (0) the phase marker.
+        :param float phase: The phase that the marker pulse is output at (in degrees)
+        :param int pin: desired output pin on the trigger connector. default=4
+
+        :returns: None
+        """
         self.K6221.write(f'SOUR:WAVE:PMARK:OLIN {pin}')
         self.K6221.write(f'SOUR:WAVE:PMARK:LEV {phase}')
         self.K6221.write(f'SOUR:WAVE:PMARK:STAT {enable}')
@@ -572,10 +767,12 @@ class K6221_Ethernet:
     def square_wave(self, hz, ma, duty=50):
         """
         Prepare a square wave output. Use with wave_output_on and wave_output_off
+
         :param float hz: desired frequency in Hz
         :param float ma: desired amplitude in milliAmps
         :param float duty: Duty cycle def: 50%
-        :return:
+
+        :returns: None
         """
         self.K6221.write('*RST')
         self.K6221.write('SOUR:WAVE:FUNC SQU')
@@ -586,7 +783,8 @@ class K6221_Ethernet:
     def wave_output_on(self):
         """
         Enables the output for the wave prepared using sine_wave or square_wave
-        :return:
+
+        :returns: None
         """
         self.K6221.write('SOUR:WAVE:ARM')
         self.K6221.write('SOUR:WAVE:INIT')
@@ -594,234 +792,17 @@ class K6221_Ethernet:
     def wave_output_off(self):
         """
         Disables current output
-        :return:
+
+        :returns:
         """
         self.K6221.write('SOUR:WAVE:ABOR')
 
     def close(self):
         """
         Closes the instrument connection, i.e. frees the port up for other applications/threads. Also disables output.
-        :return:
+
+        :returns: None
         """
         self.K6221.write('abort')
         self.K6221.write('display:enable 1')
-        self.K6221.close()
-
-
-class K6221_GPIB:
-
-    def connect(self, addr=12):
-        self.addr = addr
-        self.rm = visa.ResourceManager('@ni')
-        self.K6221 = self.rm.open_resource(f'GPIB0::{self.addr}::INSTR', read_termination='\n', timeout=10000)
-        self.K6221.write('abort')
-        self.K6221.write('*rst')
-        self.K6221.write('*cls')
-        self.K6221.write('display:enable 0')
-        self.send_to_2182A('display:enable 0')
-
-    def set_compliance(self, volts):
-        self.K6221.write(f'source:current:compliance {volts}')
-
-    def configure_pulse(self, width, count, n_low=2):
-        self.K6221.write(f'source:pdelta:sweep on')
-        self.K6221.write(f'source:pdelta:width {width}')
-        self.K6221.write(f'source:pdelta:count {count}')
-        self.K6221.write(f'source:pdelta:lmeasure {n_low}')
-        self.K6221.write(f'source:pdelta:sdelay {width / 2}')
-
-    def configure_linear_sweep(self, start, stop, step, delay, count, ranging='best'):
-        self.K6221.write(f'source:sweep:spacing linear')
-        self.K6221.write(f'source:current:start {start}')
-        self.K6221.write(f'source:current:stop {stop}')
-        self.K6221.write(f'source:current:step {step}')
-        self.K6221.write(f'source:delay {delay}')
-        self.K6221.write(f'source:sweep:count {count}')
-        self.K6221.write(f'source:sweep:ranging {ranging}')
-
-    def arm_pulse_sweep(self):
-        self.K6221.write(f'source:pdelta:arm')
-
-    def trigger_pulse_sweep(self):
-        self.K6221.write('INIT:IMM')
-
-    def get_trace(self, delay=60):
-
-        # state = '40'
-        is_finished = False
-        while not is_finished:
-            self.K6221.close()
-            time.sleep(delay)
-            self.K6221 = self.rm.open_resource(f'GPIB0::{self.addr}::INSTR', read_termination='\n', timeout=10000)
-            state = int(self.K6221.query('status:operation:cond?'))
-            is_finished = bin(state)[-2] == '1'
-            sweeping = bin(state)[-4] == '1'
-            aborted = bin(state)[-3] == '1'
-            if not sweeping:
-                print('Not sweeping or done?')
-            if aborted:
-                is_finished = True
-                print('apparently this sweep is aborted, script is ending measurement.')
-            print(f'state: {state}')
-        print('Measurement Finished, Aborting wave')
-        self.K6221.write(f'source:sweep:abort')
-        state = self.K6221.query('status:operation:cond?')
-        print(f'state: {state}')
-        time.sleep(1)
-        print('reading data')
-        data = self.K6221.query_ascii_values('trace:data?')
-        state = self.K6221.query('status:operation:cond?')
-        print(f'state: {state}')
-        return np.array(data)
-
-    def set_sense_chan_and_range(self, channel, volt_range):
-        channel_comm = f'sense:channel {channel}'
-        self.K6221.write(f'system:communicate:serial:send "{channel_comm}"')
-
-        if volt_range == 'Auto' or volt_range == 'auto':
-            range_comm = f'sense:voltage:channel{channel}:range:auto on'
-            self.K6221.write(f'system:communicate:serial:send "{range_comm}"')
-        else:
-            range_comm = f'sense:voltage:channel{channel}:range:auto off'
-            self.K6221.write(f'system:communicate:serial:send "{range_comm}"')
-            range_comm = f'sense:voltage:channel{channel}:range {volt_range}'
-            self.K6221.write(f'system:communicate:serial:send "{range_comm}"')
-
-    def send_to_2182A(self, string):
-        self.K6221.write(f'system:communicate:serial:send "{string}"')
-
-    def sine_wave(self, hz, ma, duty=50):
-        """
-        Prepare the instrument to produce a sine wave output. Use with wave_output_on and wave_output_off
-        :param hz: Frequency in Hz
-        :param float ma: peak to peak amplitude in Milliamps
-        :param duty: Duty cycle def: 50%
-        :return:
-        """
-        self.K6221.write('*RST')
-        self.K6221.write('SOUR:WAVE:FUNC SIN')
-        self.K6221.write(f'SOUR:WAVE:FREQ {hz}')
-        self.K6221.write(f'SOUR:WAVE:AMPL {ma * 1e-3}')
-        self.K6221.write('SOUR:WAVE:ARM')
-
-    def set_phase_marker(self, enable=1, phase=0, pin=4):
-        self.K6221.write(f'SOUR:WAVE:PMARK:OLIN {pin}')
-        self.K6221.write(f'SOUR:WAVE:PMARK:LEV {phase}')
-        self.K6221.write(f'SOUR:WAVE:PMARK:STAT {enable}')
-
-    # Current in mA and Freq in Hz duty in %
-    def square_wave(self, hz, ma, duty=50):
-        """
-        Prepare a square wave output. Use with wave_output_on and wave_output_off
-        :param float hz: desired frequency in Hz
-        :param float ma: desired amplitude in milliAmps
-        :param float duty: Duty cycle def: 50%
-        :return:
-        """
-        self.K6221.write('*RST')
-        self.K6221.write('SOUR:WAVE:FUNC SQU')
-        self.K6221.write(f'SOUR:WAVE:FREQ {hz}')
-        self.K6221.write(f'SOUR:WAVE:AMPL {ma * 1e-3}')
-        self.K6221.write(f'SOUR:WAVE:DCYC {duty}')
-
-    def wave_output_on(self):
-        """
-        Enables the output for the wave prepared using sine_wave or square_wave
-        :return:
-        """
-        self.K6221.write('SOUR:WAVE:ARM')
-        self.K6221.write('SOUR:WAVE:INIT')
-
-    def wave_output_off(self):
-        """
-        Disables current output
-        :return:
-        """
-        self.K6221.write('SOUR:WAVE:ABOR')
-
-    def close(self):
-        """
-        Closes the instrument connection, i.e. frees the port up for other applications/threads. Also disables output.
-        :return:
-        """
-        self.K6221.write('abort')
-        self.K6221.write('display:enable 1')
-        self.K6221.close()
-
-
-class K6221:
-
-    def connect(self, port):
-        """
-        Connects to device and resets it
-        :param int port:
-        :return:
-        """
-        rm = visa.ResourceManager('@ni')
-        self.K6221 = rm.open_resource(f'COM{port}', baud_rate=19200)
-        self.K6221.close()
-        self.K6221.open()
-        self.K6221.baud_rate = 19200
-        self.K6221.timeout = 10000
-        self.K6221.write_termination = '\r\n'
-        self.K6221.read_termination = '\r\n'
-        self.K6221.write('*rst')
-        self.K6221.write('*cls')
-        print('connected to: ', self.K6221.query('*IDN?'))
-
-    def sine_wave(self, hz, ma, duty=50):
-        """
-        Prepare the instrument to produce a sine wave output. Use with wave_output_on and wave_output_off
-        :param hz: Frequency in Hz
-        :param float ma: peak to peak amplitude in Milliamps
-        :param duty: Duty cycle def: 50%
-        :return:
-        """
-        self.K6221.write('*RST')
-        self.K6221.write('SOUR:WAVE:FUNC SIN')
-        self.K6221.write(f'SOUR:WAVE:FREQ {hz}')
-        self.K6221.write(f'SOUR:WAVE:AMPL {ma * 1e-3}')
-        self.K6221.write('SOUR:WAVE:ARM')
-
-    def set_phase_marker(self, enable=1, phase=0, pin=4):
-        self.K6221.write(f'SOUR:WAVE:PMARK:OLIN {pin}')
-        self.K6221.write(f'SOUR:WAVE:PMARK:LEV {phase}')
-        self.K6221.write(f'SOUR:WAVE:PMARK:STAT {enable}')
-
-    # Current in mA and Freq in Hz duty in %
-    def square_wave(self, hz, ma, duty=50):
-        """
-        Prepare a square wave output. Use with wave_output_on and wave_output_off
-        :param float hz: desired frequency in Hz
-        :param float ma: desired amplitude in milliAmps
-        :param float duty: Duty cycle def: 50%
-        :return:
-        """
-        self.K6221.write('*RST')
-        self.K6221.write('SOUR:WAVE:FUNC SQU')
-        self.K6221.write(f'SOUR:WAVE:FREQ {hz}')
-        self.K6221.write(f'SOUR:WAVE:AMPL {ma * 1e-3}')
-        self.K6221.write(f'SOUR:WAVE:DCYC {duty}')
-
-    def wave_output_on(self):
-        """
-        Enables the output for the wave prepared using sine_wave or square_wave
-        :return:
-        """
-        self.K6221.write('SOUR:WAVE:ARM')
-        self.K6221.write('SOUR:WAVE:INIT')
-
-    def wave_output_off(self):
-        """
-        Disables current output
-        :return:
-        """
-        self.K6221.write('SOUR:WAVE:ABOR')
-
-    def close(self):
-        """
-        Closes the instrument connection, i.e. frees the port up for other applications/threads. Also disables output.
-        :return:
-        """
-        self.K6221.write('SOUR:WAVE:ABOR')
         self.K6221.close()

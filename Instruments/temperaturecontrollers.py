@@ -17,6 +17,9 @@ class TEC1089SV:
     """
 
     def __init__(self):
+        """
+        Defines useful constants including xmodem table
+        """
         self.__CRC16_XMODEM_TABLE = [
             0x0000, 0x1021, 0x2042, 0x3063, 0x4084, 0x50A5, 0x60C6, 0x70E7,
             0x8108, 0x9129, 0xA14A, 0xB16B, 0xC18C, 0xD1AD, 0xE1CE, 0xF1EF,
@@ -55,6 +58,13 @@ class TEC1089SV:
         self.__address = '#02'
 
     def connect(self, port):
+        """
+        Connects to the temperature controller via virtual serial COM port
+
+        :param int port: Desired COM port number e.g. 8 for COM 8
+
+        :returns: None
+        """
         rm = visa.ResourceManager('@ni')
         self.__tec = rm.open_resource(f'COM{port}', baud_rate=19200)
         self.__tec.close()
@@ -70,6 +80,11 @@ class TEC1089SV:
         return instr_id
 
     def stop(self):
+        """
+        Emergency stops the instrument. Disables output etc.
+
+        :returns: Response bytes.
+        """
         start = self.__address
         seq = self.__param_hex(self.__msg_counter)
         self.__msg_counter = (self.__msg_counter + 1) % 65535
@@ -83,54 +98,116 @@ class TEC1089SV:
             print(response)
 
     def close(self):
+        """
+        Closes serial port connection
+
+        :returns: None
+        """
         self.__tec.close()
 
     def get_object_temperature(self):
+        """
+        Reads the current object temperature and converts it to float.
+
+        :returns: object temperature in celsius
+        :rtype: float
+        """
         return self.__hex_float32(self.__get_param(1000))
 
     def get_sink_temperature(self):
+        """
+        Reads the current heatsink temperature and converts it to float.
+
+        :returns: heatsink temperature in celsius
+        :rtype: float
+        """
         return self.__hex_float32(self.__get_param(1001))
 
     def get_target_temperature(self):
+        """
+        Reads the current target temperature and converts it to float.
+
+        :returns: target temperature in celsius
+        :rtype: float
+        """
         return self.__hex_float32(self.__get_param(3000))
 
     def get_output_current(self):
+        """
+        Reads the current output current and converts it to float.
+
+        :returns: output current in Amps
+        :rtype: float
+        """
         return self.__hex_float32(self.__get_param(1020))
 
     def get_output_voltage(self):
+        """
+        Reads the current output voltage and converts it to float.
+
+        :returns: output voltage in Volts
+        :rtype: float
+        """
         return self.__hex_float32(self.__get_param(1021))
 
     def get_ramp_rate(self):
+        """
+        Reads the current set point ramp rate converts it to float.
+
+        :returns: ramp rate in celsius per second
+        :rtype: float
+        """
         return self.__hex_float32(self.__get_param(3003))
 
     def get_temp_stability_state(self):
+        """
+        Asks the controller if the temperature is within stability threshold or not.
+
+        :returns: True for stable, False for ramping
+        :rtype: bool
+        """
         states = {0: 'off', 1: 'unstable', 2: 'stable'}
         return states[self.__hex_int(self.__get_param(1200))]
 
     def set_target_temperature(self, target):
+        """
+        Sets the target temperature in float by converting to bytes before sending.
+
+        :param float target: desired temperature in celsius
+        :returns: Response from instrument
+        """
         return self.__set_float32_param(3000, float(target))
 
     def set_ramp_rate(self, rate):
+        """
+        Converts the desired ramp rate from float to bytes before setting it.
+
+        :param float rate: desired ramp rate in celsius per second
+        :returns: Response from instrument
+        """
         return self.__set_float32_param(3003, float(rate))
 
     def enable_control(self):
         """
         Enables temperature control. Use set_target_temperature first.
-        :return:
+
+        :returns: Response from instrument
         """
         return self.__set_int32_param(2010, 1)
 
     def disable_control(self):
         """
         Disables temperature control
-        :return:
+
+        :returns: Response from instrument
         """
         return self.__set_int32_param(2010, 0)
 
     def get_identity(self):
         """
         Reads the identity information from the instrument for printing on connect.
-        :return:
+
+        :returns: Response from instrument
         """
         start = self.__address
         seq = self.__param_hex(self.__msg_counter)
@@ -147,9 +224,11 @@ class TEC1089SV:
 
     def __get_param(self, param):
         """
+        Given a parameter ID, this command queries the parameter from the instrument
 
         :param int param: parameter ID
-        :return: The message between the preamble and the checksum or None
+
+        :returns: The message between the preamble and the checksum or None
         """
         start = self.__address
         seq = self.__param_hex(self.__msg_counter)
@@ -167,10 +246,12 @@ class TEC1089SV:
 
     def __set_int32_param(self, param, value):
         """
+        Does appropriate conversion before setting param ID to Value
 
-        :param param:
-        :param value:
-        :return:
+        :param int param:
+        :param float value:
+
+        :returns: Response from Instrument
         """
         start = self.__address
         seq = self.__param_hex(self.__msg_counter)
@@ -189,10 +270,12 @@ class TEC1089SV:
 
     def __set_float32_param(self, param, value):
         """
+        Does appropriate conversion before setting param ID to Value
 
         :param int param:
         :param float value:
-        :return:
+
+        :returns: Response from Instrument
         """
         start = self.__address
         seq = self.__param_hex(self.__msg_counter)
@@ -212,47 +295,59 @@ class TEC1089SV:
     def __param_hex(self, param):
         """
         Converts parameter number into hex form for use in queries etc.
+
         :param int param: the parameter number to be converted into hex
-        :return: the hex form of the parameter number in 2byte format with no 0x prefix
+
+        :returns: the hex form of the parameter number in 2byte format with no 0x prefix
         """
         return f"{param:04X}"
 
     def __int32_hex(self, value):
         """
         Convert int32 to hex for transmission to device
+
         :param int32 value: The value to be converted into a 32bit hex value
-        :return: The string form of the hex with no 0x prefix, 8 characters long.
+
+        :returns: The string form of the hex with no 0x prefix, 8 characters long.
         """
         return f"{value:08X}"
 
     def __hex_int(self, hex_str):
         """
         Convert hex string from instrument into int32 (might not work with UInts above a large number)
+
         :param str hex_str:
-        :return: integer from hex
+
+        :returns: integer from hex
         """
         return int(hex_str, 16)
 
     def __float32_hex(self, value):
         """
         Convert a python float to a hex string for sending to the device
+
         :param float value: value to be converted into float
-        :return: hex string without 0x prefix
+
+        :returns: hex string without 0x prefix
         """
         return hex(struct.unpack('<I', struct.pack('<f', value))[0]).lstrip('0x').upper()
 
     def __hex_float32(self, hex_str):
         """
         Convert hex output from device into usable numbers
+
         :param str hex_str: ascii hex representation of float to be converted
-        :return: the float in double precision
+
+        :returns: the float in double precision
         """
         return struct.unpack('!f', bytes.fromhex(hex_str))[0]
 
     def __crc16(self, data):
         """Calculate checksum using CRC16 (standard)
+
         :param string data: the entire message without CRC (inc the '#' at the start)
-        :return: Return calculated value of CRC
+
+        :returns: Return calculated value of CRC
         """
         crc = 0
         for byte in data:

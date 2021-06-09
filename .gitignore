@@ -8,6 +8,8 @@ __pycache__/
 
 # Distribution / packaging
 .Python
+docs/.buildinfo
+docs/.doctrees
 build/
 develop-eggs/
 dist/
@@ -63,8 +65,7 @@ instance/
 # Scrapy stuff:
 .scrapy
 
-# Sphinx documentation
-docs/_build/
+
 
 # PyBuilder
 target/

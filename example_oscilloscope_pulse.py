@@ -1,13 +1,13 @@
-import instruments
+import Instruments
 import time
 import matplotlib.pyplot as plt
 import numpy as np
 
 
-pg = instruments.K2461()
+pg = Instruments.K2461()
 pg.connect()
 v_pulse = 5
-scope = instruments.DS1104()
+scope = Instruments.DS1104()
 scope.connect()
 scope.prepare_for_pulse(v_pulse)
 scope.set_trig_chan(3)

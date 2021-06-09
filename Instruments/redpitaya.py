@@ -1,24 +1,28 @@
 import tkinter.messagebox as mb
-import winsound
+
+import os
 
 import numpy as np
 import paramiko
+from .sounds import *
 
-__all__ = ['error_sound', 'alert_sound', 'RedPitaya']
-
-
-def error_sound():
-    winsound.PlaySound('C:\Windows\Media\Windows Background.wav', winsound.SND_FILENAME)
-
-
-def alert_sound():
-    winsound.PlaySound('C:\Windows\Media\Windows Notify System Generic.wav', winsound.SND_FILENAME)
+__all__ = ['RedPitaya']
 
 
 class RedPitaya:
+    """
+    Class to control the red pitaya used in ASOPS in B314. Not useful for much else since it interacts with the embedded
+    software
+    """
 
-    # Connects to RP using IP address (192.168.0.11)
-    def connect(self, IP):
+    def connect(self, IP='192.168.0.11'):
+        """
+        Connects to Red Pitaya using IP address (192.168.0.11) by default
+
+        :param str IP: IP address of the red pitaya
+
+        :returns: None
+        """
         self.ssh = paramiko.SSHClient()
         self.ssh.load_system_host_keys()
         self.ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
@@ -40,8 +44,17 @@ class RedPitaya:
         # Open SFTP client to download data from Red Pitaya to computer
         self.sftp = self.ssh.open_sftp()
 
-    # initiates a measurement and then reads the buffer
     def get_data(self, tracelen, numavgs, dec, trig):
+        """
+        initiates a measurement and then reads the buffer
+        :param int tracelen: number of points per trace
+        :param int numavgs: number of traces to average together
+        :param int dec: decimation level (1 or 8)
+        :param float trig: trigger level threshold (1V is almost always used)
+
+        :returns: meaned array of voltages of length "tracelen"
+        :rtype: np.ndarray
+        """
 
         datacmd = f'/root/ASOPS/trig_stu.o {tracelen} {numavgs} {dec} {trig}'
         stdin, stdout, stderr = self.ssh.exec_command(datacmd)
@@ -49,7 +62,6 @@ class RedPitaya:
         if 'no trig' in t:
             error_sound()
             raise RuntimeError('No trigger detected')
-            return
 
         self.sftp.get('data', 'data')
 
@@ -59,8 +71,9 @@ class RedPitaya:
         # print(a.shape)
         return a
 
-    # closes connection
     def close(self):
-        # This function is almost useless tbh. The close call has a try and except inside it already so if it isn't
-        # open it doesn't show any error anyway. It is easier to type self.rp.close() in the GUI calls though.
+        """
+        Closes connection to the instrument
+        :returns: None
+        """
         self.ssh.close()

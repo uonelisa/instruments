@@ -2,9 +2,9 @@ import visa
 import numpy as np
 import time
 import matplotlib.pyplot as plt
-import instruments
+import Instruments
 
-pg = instruments.K2461()
+pg = Instruments.K2461()
 pg.connect()
 
 pg.pulse_current(1e-3, 1e-3)
@@ -28,8 +28,8 @@ c, v = pg.read_one()
 print(v / c)
 pg.disable_probe_current()
 
-# The best way to do 2/4 wire measurements if using multiple instruments.
-# Set up measurement settings and then trigger a single measurement on all instruments
+# The best way to do 2/4 wire measurements if using multiple Instruments.
+# Set up measurement settings and then trigger a single measurement on all Instruments
 # then fetch the values and process them.
 pg.enable_4_wire_probe(100e-6)
 pg.trigger_fetch()

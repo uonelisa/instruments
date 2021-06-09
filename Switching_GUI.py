@@ -2,7 +2,7 @@ import time
 import numpy as np
 import matplotlib
 import winsound
-import instruments
+import Instruments
 import matplotlib.pyplot as plt
 import sys
 import serial
@@ -13,8 +13,8 @@ from PyQt5 import QtCore, QtWidgets, uic
 
 matplotlib.use('Qt5Agg')
 
-error_sound = instruments.error_sound
-alert_sound = instruments.alert_sound
+error_sound = Instruments.error_sound
+alert_sound = Instruments.alert_sound
 
 
 class DataCollector(QtCore.QObject):
@@ -33,12 +33,12 @@ class DataCollector(QtCore.QObject):
     is_stopped = False
     mutex.unlock()
 
-    sb = instruments.SwitchBox()
-    bb = instruments.BalanceBox()
-    dmm = instruments.K2000()
-    pg = instruments.K2461()
-    scope = instruments.DS1104()
-    tec = instruments.TEC1089SV()
+    sb = Instruments.SwitchBox()
+    bb = Instruments.BalanceBox()
+    dmm = Instruments.K2000()
+    pg = Instruments.K2461()
+    scope = Instruments.DS1104()
+    tec = Instruments.TEC1089SV()
 
     scope_enabled = False
     tec_enabled = False
@@ -132,7 +132,7 @@ class DataCollector(QtCore.QObject):
         self.is_stopped = False
         self.mutex.unlock()
 
-        # Converts the strings in the gui boxes into appropriate types and then connects and sets up instruments.
+        # Converts the strings in the gui boxes into appropriate types and then connects and sets up Instruments.
         error_flag, pulse_volts, pulse_mag, pulse_width, meas_curr, meas_n, loop_n = self.handle_inputs(mode,
                                                                                                         sb_port,
                                                                                                         bb_port,
@@ -466,12 +466,12 @@ class MyGUI(QtWidgets.QMainWindow):
 
     def connect_signals(self):
         # Connect gui elements to slots.
-        self.pulse_type_combobox.currentTextChanged.connect(self.on_mode_changed)
-        self.start_button.clicked.connect(self.on_start)
-        self.start_res_button.clicked.connect(self.on_res_measurement)
-        self.stop_button.clicked.connect(self.on_stop)
-        self.temperature_control_combo.currentIndexChanged.connect(self.on_temp_control_changed)
-        self.temperature_control_button.clicked.connect(self.on_temp_start_stop)
+        self.pulse_type_combobox.currentTextChanged.connect_ethernet(self.on_mode_changed)
+        self.start_button.clicked.connect_ethernet(self.on_start)
+        self.start_res_button.clicked.connect_ethernet(self.on_res_measurement)
+        self.stop_button.clicked.connect_ethernet(self.on_stop)
+        self.temperature_control_combo.currentIndexChanged.connect_ethernet(self.on_temp_control_changed)
+        self.temperature_control_button.clicked.connect_ethernet(self.on_temp_start_stop)
         self.thread = QtCore.QThread()
         self.data_collector = DataCollector()
         self.data_collector.moveToThread(self.thread)

@@ -1,7 +1,7 @@
-import instruments
+import Instruments
 import time
 
-tec = instruments.TEC1089SV()
+tec = Instruments.TEC1089SV()
 tec.connect(14)
 
 print(f'object temp = {tec.get_object_temperature()}°C')
