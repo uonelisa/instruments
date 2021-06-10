@@ -66,7 +66,7 @@ class K2000:
         self.k2000.write('sens:func "volt"')  # measure volts
         self.k2000.write(f'sens:volt:nplc {nplc}')  # level of averaging min, 0.01 -> 10 ish Power line cycle:
         # 50hz 2-> 25hz measurement
-        self.k2000.write(f'sens:volt:rang {volt_range}')  # auto-ranging
+        self.k2000.write(f'sens:volt:rang {volt_range}')  # 0-> auto-ranging
 
     def trigger(self):
         """
@@ -100,7 +100,7 @@ class K2000:
         :returns: voltage value
         :rtype: float
         """
-        data = np.array([self.k2000.query_ascii_values('sens:data?')])
+        data = np.array([self.k2000.query_ascii_values('read?')])
         return data[0][0]
 
     def measure_one(self):

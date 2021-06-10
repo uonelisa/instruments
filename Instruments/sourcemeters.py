@@ -62,7 +62,7 @@ class K2400:
         self.k2400.write('init')
         self.k2400.write('*wai')
 
-    def prepare_measure_one(self, current, nplc=2):
+    def prepare_measure_one(self, current, range=0, nplc=2):
         """
         Prepare to measure many points in 4 wire mode one at a time. Use with read_one
 
@@ -81,13 +81,23 @@ class K2400:
         self.k2400.write('sens:volt:prot:lev 20')
         self.k2400.write('sens:func "volt"')
         self.k2400.write(f'sens:volt:nplc {nplc}')
-        self.k2400.write('sens:volt:rang:auto on')
+        if range == 0:
+            self.k2400.write('sens:volt:rang:auto on')
+        else:
+            self.k2400.write('sens:volt:rang:auto off')
+            self.k2400.write(f'sens:volt:rang {range}')
         self.k2400.write('syst:rsen on')
         self.k2400.write('form:elem time, volt, curr')
         # self.k2400.write('outp on')
 
     def read_one(self):
         voltage, current, t = self.k2400.query_ascii_values('READ?')
+        return t, voltage, current
+
+    def fetch_one(self):
+        # data = self.k2400.query_ascii_values('fetch?')
+        # print(data)
+        voltage, current, t = self.k2400.query_ascii_values('fetch?')
         return t, voltage, current
 
     # Sets up the parameters to measure data and store it in buffer
