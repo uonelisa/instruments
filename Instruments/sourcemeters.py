@@ -515,7 +515,7 @@ class K6221:
     second harmonic measurements
     """
 
-    def connect_ethernet(self, IP='192.168.0.10'):
+    def connect_ethernet(self, IP='192.168.0.12'):
         """
         Connect to the instrument using ethernet port
 
