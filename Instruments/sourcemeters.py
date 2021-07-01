@@ -62,6 +62,34 @@ class K2400:
         self.k2400.write('init')
         self.k2400.write('*wai')
 
+    def prepare_measure_only(self, range=0, nplc=2):
+        """
+        Prepare to measure many points in 4 wire mode one at a time. Use with read_one
+
+        :param float current: the source current for 4wire measurements
+        :param float num: number of points to measure
+        :param float nplc: number of powerline cycles per measurement
+
+        :returns: None
+        """
+        self.k2400.write('*rst')
+        self.k2400.write('*cls')
+        self.k2400.write(':SYSTEM:BEEP:STATE OFF')
+        self.k2400.write('sour:func curr')
+        self.k2400.write(f'sour:curr {0}')
+        self.k2400.write('sour:curr:rang:auto on')
+        self.k2400.write('sens:volt:prot:lev 20')
+        self.k2400.write('sens:func "volt"')
+        self.k2400.write(f'sens:volt:nplc {nplc}')
+        if range == 0:
+            self.k2400.write('sens:volt:rang:auto on')
+        else:
+            self.k2400.write('sens:volt:rang:auto off')
+            self.k2400.write(f'sens:volt:rang {range}')
+        self.k2400.write('syst:rsen off')
+        time.sleep(0.5)
+        self.k2400.write('form:elem time, volt, curr')
+
     def prepare_measure_one(self, current, range=0, nplc=2):
         """
         Prepare to measure many points in 4 wire mode one at a time. Use with read_one
@@ -97,6 +125,9 @@ class K2400:
     def fetch_one(self):
         # data = self.k2400.query_ascii_values('fetch?')
         # print(data)
+        # t = data[2]
+        # voltage = data[0]
+        # current = data[1]
         voltage, current, t = self.k2400.query_ascii_values('fetch?')
         return t, voltage, current
 
@@ -788,7 +819,7 @@ class K6221:
         Prepare the instrument to produce a sine wave output. Use with wave_output_on and wave_output_off
 
         :param hz: Frequency in Hz
-        :param float ma: peak to peak amplitude in Milliamps
+        :param float ma: peak - DC amplitude in Milliamps (Ip not Ipp or Irms)
         :param duty: Duty cycle def: 50%
 
         :returns: None
