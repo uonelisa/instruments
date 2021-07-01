@@ -24,7 +24,7 @@ def save(data, header):
 
 class Plotter:
     """
-    no way to save data after completion.
+
     """
 
     def __init__(self, port, meas_curr, max_time):
@@ -39,7 +39,7 @@ class Plotter:
 
     def get_data(self):
         self.source_meter.prepare_measure_one(self.current)
-        self.source_meter.use_rear_io(True)
+        self.source_meter.use_rear_io(False)
         self.source_meter.enable_output_current()
         while self._is_running:
             t, v, c = self.source_meter.read_one()
@@ -52,12 +52,12 @@ class Plotter:
         voltages = []
         resistances = []
         figure = plt.figure(1)
-        plt.title("K2400 resistance plots")
+        figure.canvas.set_window_title('Resistance Plots')
         ax = figure.add_subplot(111)
         plt.xlabel('Time(s)')
         plt.ylabel('Resistance (Ohms)')
         resistance_line, = ax.plot(times, resistances, 'r-')
-        stop_button_axes = plt.axes([0.81, 0.05, 0.1, 0.075])
+        stop_button_axes = plt.axes([0.81, 0.025, 0.1, 0.055])
         stop_button = Button(stop_button_axes, 'Stop')
         stop_button.on_clicked(self.stop_button_callback)
         ax.grid()
@@ -94,5 +94,5 @@ class Plotter:
 
 
 if __name__ == '__main__':
-    current = 100e-6
-    plotter = Plotter(7, current, 180)
+    current = 0.1e-3
+    plotter = Plotter(6, current, 30000)
