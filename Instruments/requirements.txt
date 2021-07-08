@@ -1,7 +1,11 @@
-pypyvisa
+python >= 3.8.8
+pyvisa
 pyserial
 numpy
 TK
+paramiko
+winsound
+
 
 
 
