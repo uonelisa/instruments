@@ -1,5 +1,4 @@
 
-
 # instruments
 Python Instruments Library for common instruments in Spintronics at Nottingham
 
@@ -22,30 +21,36 @@ Add the following argument to setup.py setuptools.setup()
     dependency_links=['https://github.com/stupoole/instruments/tarball/repo/master#egg=package-1.0'],
 
 
-## Importing the package
+## Importing the package and first use
     import instruments
+    multimeter = instruments.K2000()
+    multimeter.connect(12) # connected on COM12
+    multimeter.
 
+## Examples
+    https://github.com/stupoole/instrumentsexamples
 
-# lockins.py 
+# Modules
+## lockins
 File containing classes for the Signal Recovery SR830. The Synktek MCL code is a private repository still.  
 
-# multimeters.py
+## multimeters
 Just contains the keithley 2000 for now.
 
-# sourcemeters.py
+## sourcemeters
 Contains the Keithley models K2400, K2401, K2461 and K6221. 
 
-# oscilloscopes.py 
+## oscilloscopes
 Contains the Rigol DS1104 basic control scripts.
 
-# redpitaya.py
+## redpitaya
 A script that pulls data from the red pitaya. It interfaces with the script running on the red pitaya for ASOPS measurements and probably won't be too helpful for most people except in B314
 
-# switchbox.py
+## switchbox
 Contains controls to change the connections in our inhouse switchboxes. Uses dictionaries to make it simple to see what is connecting to what.
 
-# temperaturecontrollers.py 
+## temperaturecontrollers
 Contains binary interface code for the TEC1089SV peltier controller for the Room Temperature System. There are plans to control the eurotherm temperature controllers for high temperature measurements and oxford instruments cryogenic controllers.
 
-# sounds.py
+## sounds
 Just includes methods to play the error/notification sounds
