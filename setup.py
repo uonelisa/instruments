@@ -13,7 +13,7 @@ setuptools.setup(
     packages=setuptools.find_packages(
         exclude=('docs')
     ),
-    url='https://github.com/stupoole/Instruments',
+    url='https://github.com/stupoole/instruments',
     install_requires=[
         'numpy',
 
