@@ -1,4 +1,4 @@
-import visa
+import pyvisa
 import numpy as np
 import time
 
@@ -18,7 +18,7 @@ class K2400:
 
         :returns: None
         """
-        rm = visa.ResourceManager('@ni')
+        rm = pyvisa.ResourceManager('@ivi')
         self.k2400 = rm.open_resource(f'COM{port}', baud_rate=19200)
         self.k2400.close()
         self.k2400.open()
@@ -29,6 +29,12 @@ class K2400:
         self.k2400.write('*rst')
         self.k2400.write('*cls')
         print('connected to: ', self.k2400.query('*IDN?'))
+
+    def use_rear_io(self, use_rear):
+        if use_rear:
+            self.k2400.write('route:terminals rear')
+        else:
+            self.k2400.write('route:terminals front')
 
     # Sends a square pulse of 5ms duration and amplitude "current" Amps
     def pulse_current(self, current):
@@ -56,8 +62,77 @@ class K2400:
         self.k2400.write('init')
         self.k2400.write('*wai')
 
+    def prepare_measure_only(self, range=0, nplc=2):
+        """
+        Prepare to measure many points in 4 wire mode one at a time. Use with read_one
+
+        :param float current: the source current for 4wire measurements
+        :param float num: number of points to measure
+        :param float nplc: number of powerline cycles per measurement
+
+        :returns: None
+        """
+        self.k2400.write('*rst')
+        self.k2400.write('*cls')
+        self.k2400.write(':SYSTEM:BEEP:STATE OFF')
+        self.k2400.write('sour:func curr')
+        self.k2400.write(f'sour:curr {0}')
+        self.k2400.write('sour:curr:rang:auto on')
+        self.k2400.write('sens:volt:prot:lev 20')
+        self.k2400.write('sens:func "volt"')
+        self.k2400.write(f'sens:volt:nplc {nplc}')
+        if range == 0:
+            self.k2400.write('sens:volt:rang:auto on')
+        else:
+            self.k2400.write('sens:volt:rang:auto off')
+            self.k2400.write(f'sens:volt:rang {range}')
+        self.k2400.write('syst:rsen off')
+        time.sleep(0.5)
+        self.k2400.write('form:elem time, volt, curr')
+
+    def prepare_measure_one(self, current, range=0, nplc=2):
+        """
+        Prepare to measure many points in 4 wire mode one at a time. Use with read_one
+
+        :param float current: the source current for 4wire measurements
+        :param float num: number of points to measure
+        :param float nplc: number of powerline cycles per measurement
+
+        :returns: None
+        """
+        self.k2400.write('*rst')
+        self.k2400.write('*cls')
+        self.k2400.write(':SYSTEM:BEEP:STATE OFF')
+        self.k2400.write('sour:func curr')
+        self.k2400.write(f'sour:curr {current}')
+        self.k2400.write('sour:curr:rang:auto on')
+        self.k2400.write('sens:volt:prot:lev 20')
+        self.k2400.write('sens:func "volt"')
+        self.k2400.write(f'sens:volt:nplc {nplc}')
+        if range == 0:
+            self.k2400.write('sens:volt:rang:auto on')
+        else:
+            self.k2400.write('sens:volt:rang:auto off')
+            self.k2400.write(f'sens:volt:rang {range}')
+        self.k2400.write('syst:rsen on')
+        self.k2400.write('form:elem time, volt, curr')
+        # self.k2400.write('outp on')
+
+    def read_one(self):
+        voltage, current, t = self.k2400.query_ascii_values('READ?')
+        return t, voltage, current
+
+    def fetch_one(self):
+        # data = self.k2400.query_ascii_values('fetch?')
+        # print(data)
+        # t = data[2]
+        # voltage = data[0]
+        # current = data[1]
+        voltage, current, t = self.k2400.query_ascii_values('fetch?')
+        return t, voltage, current
+
     # Sets up the parameters to measure data and store it in buffer
-    def measure_n(self, current, num, nplc=2):
+    def prepare_measure_n(self, current, num, nplc=2):
         """
         Measure many points in 4 wire mode. Use with "trigger" and "read buffer"
 
@@ -110,6 +185,12 @@ class K2400:
         c = data[0::3]
         return t, v, c
 
+    def disable_output_current(self):
+        self.k2400.write('outp off')
+
+    def enable_output_current(self):
+        self.k2400.write('outp on')
+
     def close(self):
         """
         Closes the instrument, i.e. frees the port up for other applications/threads. Also disables output.
@@ -133,7 +214,7 @@ class K2401:
 
         :returns: None
         """
-        rm = visa.ResourceManager('@ni')
+        rm = pyvisa.ResourceManager('@ivi')
         self.k2401 = rm.open_resource(f'COM{port}', baud_rate=19200)
         self.k2401.close()
         self.k2401.open()
@@ -235,7 +316,7 @@ class K2401:
 
 class K2461:
     """
-    Keithley 2461 control interface using USB_VISA connection, designed for use when switching
+    Keithley 2461 control interface using USB_pyvisa connection, designed for use when switching
     """
 
     def connect(self):
@@ -245,7 +326,7 @@ class K2461:
 
         :returns: None
         """
-        rm = visa.ResourceManager('@ni')
+        rm = pyvisa.ResourceManager('@ivi')
         self.k2461 = rm.open_resource('USB0::0x05E6::0x2461::04121022::INSTR', write_termination='\n', send_end=True)
         self.k2461.timeout = 50000
         print('connected to: ', self.k2461.query('*idn?'))
@@ -306,9 +387,9 @@ class K2461:
         """
         self.k2461.write('init')  # send pulse
 
-    def measure_n(self, current, num, nplc=2):
+    def prepare_measure_n(self, current, num, nplc=2):
         """
-        Prepares the Instruments to measure specified number of points in a 4wire resistance configuration. Use trigger
+        Prepares the instruments to measure specified number of points in a 4wire resistance configuration. Use trigger
         start the measurement and read_buffer to collect the data. This does not enable probe current.
 
         :param float current: probing current amplitude in amps
@@ -384,9 +465,9 @@ class K2461:
         self.k2461.write('trac:trig "mybuffer"')
         self.k2461.write('*wai')
 
-    def trigger_fetch(self):
+    def trigger_before_fetch(self):
         """
-        Triggers a single measurement for reading back off later. Use for higher synchronicity between Instruments.
+        Triggers a single measurement for reading back off later. Use for higher synchronicity between instruments.
         Use fetch_one to get the data. See also: read_one
 
         :returns: None
@@ -465,7 +546,7 @@ class K6221:
     second harmonic measurements
     """
 
-    def connect_ethernet(self, IP='192.168.0.10'):
+    def connect_ethernet(self, IP='192.168.0.12'):
         """
         Connect to the instrument using ethernet port
 
@@ -473,7 +554,7 @@ class K6221:
 
         :returns: None
         """
-        self.rm = visa.ResourceManager('@ni')
+        self.rm = pyvisa.ResourceManager('@ivi')
         self.K6221 = self.rm.open_resource(f'TCPIP::{IP}::1394::SOCKET', write_termination='\r\n',
                                            read_termination='\n', timeout=10000)
         self.K6221.write('source:sweep:abort')
@@ -490,7 +571,7 @@ class K6221:
         :returns: None
         """
         self.addr = addr
-        self.rm = visa.ResourceManager('@ni')
+        self.rm = pyvisa.ResourceManager('@ivi')
         self.K6221 = self.rm.open_resource(f'GPIB0::{self.addr}::INSTR', read_termination='\n', timeout=10000)
         self.K6221.write('abort')
         self.K6221.write('*rst')
@@ -506,7 +587,7 @@ class K6221:
 
         :returns: None
         """
-        rm = visa.ResourceManager('@ni')
+        rm = pyvisa.ResourceManager('@ivi')
         self.K6221 = rm.open_resource(f'COM{port}', baud_rate=19200)
         self.K6221.close()
         self.K6221.open()
@@ -738,7 +819,7 @@ class K6221:
         Prepare the instrument to produce a sine wave output. Use with wave_output_on and wave_output_off
 
         :param hz: Frequency in Hz
-        :param float ma: peak to peak amplitude in Milliamps
+        :param float ma: peak - DC amplitude in Milliamps (Ip not Ipp or Irms)
         :param duty: Duty cycle def: 50%
 
         :returns: None

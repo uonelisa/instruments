@@ -1,69 +1,69 @@
-Instruments package
+instruments package
 ===================
 
 Submodules
 ----------
 
-Instruments.lockins module
+instruments.lockins module
 --------------------------
 
-.. automodule:: Instruments.lockins
+.. automodule:: instruments.lockins
    :members:
    :undoc-members:
    :show-inheritance:
 
-Instruments.multimeters module
+instruments.multimeters module
 ------------------------------
 
-.. automodule:: Instruments.multimeters
+.. automodule:: instruments.multimeters
    :members:
    :undoc-members:
    :show-inheritance:
 
-Instruments.oscilloscopes module
+instruments.oscilloscopes module
 --------------------------------
 
-.. automodule:: Instruments.oscilloscopes
+.. automodule:: instruments.oscilloscopes
    :members:
    :undoc-members:
    :show-inheritance:
 
-Instruments.redpitaya module
+instruments.redpitaya module
 ----------------------------
 
-.. automodule:: Instruments.redpitaya
+.. automodule:: instruments.redpitaya
    :members:
    :undoc-members:
    :show-inheritance:
 
-Instruments.sounds module
+instruments.sounds module
 -------------------------
 
-.. automodule:: Instruments.sounds
+.. automodule:: instruments.sounds
    :members:
    :undoc-members:
    :show-inheritance:
 
-Instruments.sourcemeters module
+instruments.sourcemeters module
 -------------------------------
 
-.. automodule:: Instruments.sourcemeters
+.. automodule:: instruments.sourcemeters
    :members:
    :undoc-members:
    :show-inheritance:
 
-Instruments.switchbox module
+instruments.switchbox module
 ----------------------------
 
-.. automodule:: Instruments.switchbox
+.. automodule:: instruments.switchbox
    :members:
    :undoc-members:
    :show-inheritance:
 
-Instruments.temperaturecontrollers module
+instruments.temperaturecontrollers module
 -----------------------------------------
 
-.. automodule:: Instruments.temperaturecontrollers
+.. automodule:: instruments.temperaturecontrollers
    :members:
    :undoc-members:
    :show-inheritance:
@@ -71,7 +71,7 @@ Instruments.temperaturecontrollers module
 Module contents
 ---------------
 
-.. automodule:: Instruments
+.. automodule:: instruments
    :members:
    :undoc-members:
    :show-inheritance:
