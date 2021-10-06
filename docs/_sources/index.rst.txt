@@ -1,4 +1,4 @@
-Instrument Package Documentation
+instrument Package Documentation
 ================================
 
 .. toctree::
