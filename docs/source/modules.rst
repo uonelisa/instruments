@@ -1,7 +1,7 @@
-Instruments
+instruments
 ===========
 
 .. toctree::
    :maxdepth: 5
 
-   Instruments
+   instruments
