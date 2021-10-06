@@ -1,16 +1,33 @@
-# Instruments
+
+
+# instruments
 Python Instruments Library for common instruments in Spintronics at Nottingham
 
 This repo includes examples scripts, WIP scripts and actually used scripts for convenience. 
 
-Please excuse the informal format of the repo. There are plans to create appropriate branches and neaten things up in the future (probably when procrastinating).
+Please excuse the informal format of the repo. There are plans to create appropriate branches and neaten things up in the future.
+## Documentation 
+    https://stupoole.github.io/instruments/
 
-import Instruments
-Keithley_2000 = Instruments.K2000() # create the instrument object/instance
-K2000.connect(12) # connect to the instrument in port COM12
+## Installation from github
+    pip install git+https://github.com/stupoole/instruments
+       
+    
+## Updating if already installed
+    pip install --upgrade git+https://github.com/stupoole/instruments
+    
+## To add as a dependency to another pip repository
+Add the following argument to setup.py setuptools.setup()
+
+    dependency_links=['https://github.com/stupoole/instruments/tarball/repo/master#egg=package-1.0'],
+
+
+## Importing the package
+    import instruments
+
 
 # lockins.py 
-File containing classes for the Signal Recovery SR830 and a preliminary attempt for the Ametek/Synktek MCL model 5210.
+File containing classes for the Signal Recovery SR830. The Synktek MCL code is a private repository still.  
 
 # multimeters.py
 Just contains the keithley 2000 for now.
