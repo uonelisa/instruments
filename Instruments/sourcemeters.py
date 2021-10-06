@@ -387,7 +387,7 @@ class K2461:
         """
         self.k2461.write('init')  # send pulse
 
-    def measure_n(self, current, num, nplc=2):
+    def prepare_measure_n(self, current, num, nplc=2):
         """
         Prepares the Instruments to measure specified number of points in a 4wire resistance configuration. Use trigger
         start the measurement and read_buffer to collect the data. This does not enable probe current.
@@ -465,7 +465,7 @@ class K2461:
         self.k2461.write('trac:trig "mybuffer"')
         self.k2461.write('*wai')
 
-    def trigger_fetch(self):
+    def trigger_before_fetch(self):
         """
         Triggers a single measurement for reading back off later. Use for higher synchronicity between Instruments.
         Use fetch_one to get the data. See also: read_one
