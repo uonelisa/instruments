@@ -1133,14 +1133,15 @@ software</p>
 
 <dl class="py method">
 <dt id="instruments.sourcemeters.K2400.prepare_measure_n">
-<code class="sig-name descname"><span class="pre">prepare_measure_n</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">current</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">nplc</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">2</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#instruments.sourcemeters.K2400.prepare_measure_n" title="Permalink to this definition">¶</a></dt>
-<dd><p>Measure many points in 4 wire mode. Use with “trigger” and “read buffer”</p>
+<code class="sig-name descname"><span class="pre">prepare_measure_n</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">current</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">nplc</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">2</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">four_wire</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#instruments.sourcemeters.K2400.prepare_measure_n" title="Permalink to this definition">¶</a></dt>
+<dd><p>Measure many points in 2 or 4 wire mode. Use with “trigger” and “read buffer”</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>current</strong> (<em>float</em>) – the source current for 4wire measurements</p></li>
+<li><p><strong>current</strong> (<em>float</em>) – the source current for measurements</p></li>
 <li><p><strong>num</strong> (<em>float</em>) – number of points to measure</p></li>
 <li><p><strong>nplc</strong> (<em>float</em>) – number of powerline cycles per measurement</p></li>
+<li><p><strong>four_wire</strong> – bool, whether to use 4 wire mode (default, True) or 2 wire (False)</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns</dt>
@@ -1151,14 +1152,15 @@ software</p>
 
 <dl class="py method">
 <dt id="instruments.sourcemeters.K2400.prepare_measure_one">
-<code class="sig-name descname"><span class="pre">prepare_measure_one</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">current</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">range</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">nplc</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">2</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#instruments.sourcemeters.K2400.prepare_measure_one" title="Permalink to this definition">¶</a></dt>
-<dd><p>Prepare to measure many points in 4 wire mode one at a time. Use with read_one</p>
+<code class="sig-name descname"><span class="pre">prepare_measure_one</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">current</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">range</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">nplc</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">2</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">four_wire</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#instruments.sourcemeters.K2400.prepare_measure_one" title="Permalink to this definition">¶</a></dt>
+<dd><p>Prepare to measure many points in 2 ir 4 wire mode one at a time. Use with read_one</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>current</strong> (<em>float</em>) – the source current for 4wire measurements</p></li>
+<li><p><strong>current</strong> (<em>float</em>) – the source current for measurements</p></li>
 <li><p><strong>num</strong> (<em>float</em>) – number of points to measure</p></li>
 <li><p><strong>nplc</strong> (<em>float</em>) – number of powerline cycles per measurement</p></li>
+<li><p><strong>four_wire</strong> – bool, whether to use 4 wire mode (default, True) or 2 wire (False)</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns</dt>
@@ -1169,14 +1171,15 @@ software</p>
 
 <dl class="py method">
 <dt id="instruments.sourcemeters.K2400.prepare_measure_only">
-<code class="sig-name descname"><span class="pre">prepare_measure_only</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">range</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">nplc</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">2</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#instruments.sourcemeters.K2400.prepare_measure_only" title="Permalink to this definition">¶</a></dt>
-<dd><p>Prepare to measure many points in 4 wire mode one at a time. Use with read_one</p>
+<code class="sig-name descname"><span class="pre">prepare_measure_only</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">range</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">nplc</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">2</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">four_wire</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#instruments.sourcemeters.K2400.prepare_measure_only" title="Permalink to this definition">¶</a></dt>
+<dd><p>Prepare to measure many points in 2 or 4 wire mode one at a time. Use with read_one</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>current</strong> (<em>float</em>) – the source current for 4wire measurements</p></li>
+<li><p><strong>current</strong> (<em>float</em>) – the source current for measurements</p></li>
 <li><p><strong>num</strong> (<em>float</em>) – number of points to measure</p></li>
 <li><p><strong>nplc</strong> (<em>float</em>) – number of powerline cycles per measurement</p></li>
+<li><p><strong>four_wire</strong> – bool, whether to use 4 wire mode (default, True) or 2 wire (False)</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns</dt>
@@ -1187,11 +1190,14 @@ software</p>
 
 <dl class="py method">
 <dt id="instruments.sourcemeters.K2400.pulse_current">
-<code class="sig-name descname"><span class="pre">pulse_current</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">current</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#instruments.sourcemeters.K2400.pulse_current" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname"><span class="pre">pulse_current</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">current</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">four_wire</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#instruments.sourcemeters.K2400.pulse_current" title="Permalink to this definition">¶</a></dt>
 <dd><p>Sends a square pulse of 5ms duration and specified amplitude Amps</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><p><strong>current</strong> (<em>float</em>) – current in AMPS</p>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>current</strong> (<em>float</em>) – current in AMPS</p></li>
+<li><p><strong>four_wire</strong> – bool, whether to use 4 wire mode (default, True) or 2 wire (False)</p></li>
+</ul>
 </dd>
 <dt class="field-even">Returns</dt>
 <dd class="field-even"><p>None</p>
@@ -1268,7 +1274,7 @@ software</p>
 
 <dl class="py method">
 <dt id="instruments.sourcemeters.K2401.measure_n">
-<code class="sig-name descname"><span class="pre">measure_n</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">current</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">nplc</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">2</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#instruments.sourcemeters.K2401.measure_n" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname"><span class="pre">measure_n</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">current</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">nplc</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">2</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">four_wire</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#instruments.sourcemeters.K2401.measure_n" title="Permalink to this definition">¶</a></dt>
 <dd><p>Measure many points in 4 wire mode. Use with “trigger” and “read buffer”</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
@@ -1276,6 +1282,7 @@ software</p>
 <li><p><strong>current</strong> – float, the source current for 4wire measurements</p></li>
 <li><p><strong>num</strong> – float/int, number of points to measure</p></li>
 <li><p><strong>nplc</strong> – float/int, number of powerline cycles per measurement</p></li>
+<li><p><strong>four_wire</strong> – bool, whether to use 4 wire mode (default, True) or 2 wire (False)</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns</dt>
@@ -1286,11 +1293,14 @@ software</p>
 
 <dl class="py method">
 <dt id="instruments.sourcemeters.K2401.pulse_current">
-<code class="sig-name descname"><span class="pre">pulse_current</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">current</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#instruments.sourcemeters.K2401.pulse_current" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname"><span class="pre">pulse_current</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">current</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">four_wire</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#instruments.sourcemeters.K2401.pulse_current" title="Permalink to this definition">¶</a></dt>
 <dd><p>Sends a square pulse of 5ms duration and specified amplitude Amps</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><p><strong>current</strong> – float, current in AMPS</p>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>current</strong> – float, current in AMPS</p></li>
+<li><p><strong>four_wire</strong> – bool, whether to use 4 wire mode (default, True) or 2 wire (False)</p></li>
+</ul>
 </dd>
 <dt class="field-even">Returns</dt>
 <dd class="field-even"><p>None</p>

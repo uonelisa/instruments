@@ -1,6 +1,6 @@
 
 # instruments
-Python Instruments Library for common instruments in Spintronics at Nottingham
+Python instruments Library for common instruments in Spintronics at Nottingham
 
 This repo includes examples scripts, WIP scripts and actually used scripts for convenience. 
 
