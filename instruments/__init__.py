@@ -17,3 +17,4 @@ from .switchbox import *
 from .sourcemeters import *
 from .temperaturecontrollers import *
 from .oscilloscopes import *
+from .filehandler import *
