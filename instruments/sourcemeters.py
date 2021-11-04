@@ -696,7 +696,6 @@ class K6221:
         for x in sweep_list[1:]:
             self.K6221.write(f'source:list:current:append {x}')
             self.K6221.write(f'source:list:delay:append {delay}')
-        self.K6221.write(f'source:list:delay {delay}')
         self.K6221.write(f'source:list:compliance {compliance}')
         self.K6221.write(f'source:sweep:count {count}')
         self.K6221.write(f'source:sweep:ranging {ranging}')
