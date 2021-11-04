@@ -690,8 +690,8 @@ class K6221:
         """
         self.K6221.write(f'source:current {bias}')
         self.K6221.write('source:sweep:spacing list')
-        self.K6221.write(f'source:delay {delay}')
-        self.K6221.write(f'source:list:delay {delay}')
+        self.K6221.write(f'source:delay {delay}')  # delay between loops?
+        self.K6221.write(f'source:list:delay {delay}')  # delay between measurements inside loops?
         self.K6221.write(f'source:list:current {sweep_list[0]}')
         for x in sweep_list[1:]:
             self.K6221.write(f'source:list:current:append {x}')
