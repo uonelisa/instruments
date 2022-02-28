@@ -28,7 +28,7 @@ Add the following argument to setup.py setuptools.setup()
     multimeter.
 
 ## Examples
-    [https://github.com/stupoole/instrumentsexamples](https://github.com/stupoole/instrumentsexamples)
+[https://github.com/stupoole/instrumentsexamples](https://github.com/stupoole/instrumentsexamples)
 
 # Modules
 ## lockins
