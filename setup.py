@@ -7,7 +7,7 @@ with open("LICENSE", "r") as fh:
     license = fh.read()
 
 setuptools.setup(
-    name='',
+    name='instruments',
     version='0.1',
     license=license,
     packages=setuptools.find_packages(
@@ -16,8 +16,9 @@ setuptools.setup(
     url='https://github.com/stupoole/instruments',
     install_requires=[
         'numpy',
-
-
+        'pyvisa',
+        'paramiko',
+        'pyserial'
     ],
     include_package_data=True,
 )

@@ -37,11 +37,12 @@ class K2400:
             self.k2400.write('route:terminals front')
 
     # Sends a square pulse of 5ms duration and amplitude "current" Amps
-    def pulse_current(self, current):
+    def pulse_current(self, current, four_wire=True):
         """
         Sends a square pulse of 5ms duration and specified amplitude Amps
 
         :param float current: current in AMPS
+        :param four_wire: bool, whether to use 4 wire mode (default, True) or 2 wire (False)
 
         :returns: None
         """
@@ -49,7 +50,10 @@ class K2400:
         self.k2400.write(':SYSTEM:BEEP:STATE OFF')
         self.k2400.write('trac:cle')
         self.k2400.write('*cls')
-        self.k2400.write(':syst:rsen on')
+        if four_wire:
+            self.k2400.write('syst:rsen on')
+        else:
+            self.k2400.write('syst:rsen off')
         self.k2400.write('trig:coun 1')
         self.k2400.write('sour:func curr')
         self.k2400.write('sens:func:conc off')
@@ -62,13 +66,14 @@ class K2400:
         self.k2400.write('init')
         self.k2400.write('*wai')
 
-    def prepare_measure_only(self, range=0, nplc=2):
+    def prepare_measure_only(self, range=0, nplc=2, four_wire=True):
         """
-        Prepare to measure many points in 4 wire mode one at a time. Use with read_one
+        Prepare to measure many points in 2 or 4 wire mode one at a time. Use with read_one
 
-        :param float current: the source current for 4wire measurements
+        :param float current: the source current for measurements
         :param float num: number of points to measure
         :param float nplc: number of powerline cycles per measurement
+        :param four_wire: bool, whether to use 4 wire mode (default, True) or 2 wire (False)
 
         :returns: None
         """
@@ -86,17 +91,21 @@ class K2400:
         else:
             self.k2400.write('sens:volt:rang:auto off')
             self.k2400.write(f'sens:volt:rang {range}')
-        self.k2400.write('syst:rsen off')
+        if four_wire:
+            self.k2400.write('syst:rsen on')
+        else:
+            self.k2400.write('syst:rsen off')
         time.sleep(0.5)
         self.k2400.write('form:elem time, volt, curr')
 
-    def prepare_measure_one(self, current, range=0, nplc=2):
+    def prepare_measure_one(self, current, range=0, nplc=2, four_wire=True):
         """
-        Prepare to measure many points in 4 wire mode one at a time. Use with read_one
+        Prepare to measure many points in 2 ir 4 wire mode one at a time. Use with read_one
 
-        :param float current: the source current for 4wire measurements
+        :param float current: the source current for measurements
         :param float num: number of points to measure
         :param float nplc: number of powerline cycles per measurement
+        :param four_wire: bool, whether to use 4 wire mode (default, True) or 2 wire (False)
 
         :returns: None
         """
@@ -114,7 +123,10 @@ class K2400:
         else:
             self.k2400.write('sens:volt:rang:auto off')
             self.k2400.write(f'sens:volt:rang {range}')
-        self.k2400.write('syst:rsen on')
+        if four_wire:
+            self.k2400.write('syst:rsen on')
+        else:
+            self.k2400.write('syst:rsen off')
         self.k2400.write('form:elem time, volt, curr')
         # self.k2400.write('outp on')
 
@@ -132,13 +144,14 @@ class K2400:
         return t, voltage, current
 
     # Sets up the parameters to measure data and store it in buffer
-    def prepare_measure_n(self, current, num, nplc=2):
+    def prepare_measure_n(self, current, num, nplc=2, four_wire=True):
         """
-        Measure many points in 4 wire mode. Use with "trigger" and "read buffer"
+        Measure many points in 2 or 4 wire mode. Use with "trigger" and "read buffer"
 
-        :param float current: the source current for 4wire measurements
+        :param float current: the source current for measurements
         :param float num: number of points to measure
         :param float nplc: number of powerline cycles per measurement
+        :param four_wire: bool, whether to use 4 wire mode (default, True) or 2 wire (False)
 
         :returns: None
         """
@@ -152,7 +165,10 @@ class K2400:
         self.k2400.write('sens:func "volt"')
         self.k2400.write(f'sens:volt:nplc {nplc}')
         self.k2400.write('sens:volt:rang:auto on')
-        self.k2400.write('syst:rsen on')
+        if four_wire:
+            self.k2400.write('syst:rsen on')
+        else:
+            self.k2400.write('syst:rsen off')
         self.k2400.write('form:elem time, volt, curr')
         self.k2400.write('trac:cle')  # clear buffer
         self.k2400.write(f'trig:count {num}')  # number of p
@@ -226,18 +242,22 @@ class K2401:
         self.k2401.write('*cls')
         print('connected to: ', self.k2401.query('*IDN?'))
 
-    def pulse_current(self, current):
+    def pulse_current(self, current, four_wire=True):
         """
         Sends a square pulse of 5ms duration and specified amplitude Amps
 
         :param current: float, current in AMPS
+        :param four_wire: bool, whether to use 4 wire mode (default, True) or 2 wire (False)
 
         :returns: None
         """
         self.k2401.write('*rst')
         self.k2401.write('trac:cle')
         self.k2401.write('*cls')
-        self.k2401.write(':syst:rsen on')
+        if four_wire:
+            self.k2401.write('syst:rsen on')
+        else:
+            self.k2401.write('syst:rsen off')
         self.k2401.write('trig:coun 1')
         self.k2401.write('sour:func curr')
         self.k2401.write('sens:func:conc off')
@@ -251,13 +271,14 @@ class K2401:
         self.k2401.write('*wai')
 
     # Sets up the parameters to measure data and store it in buffer
-    def measure_n(self, current, num, nplc=2):
+    def measure_n(self, current, num, nplc=2, four_wire=True):
         """
         Measure many points in 4 wire mode. Use with "trigger" and "read buffer"
 
         :param current: float, the source current for 4wire measurements
         :param num: float/int, number of points to measure
         :param nplc: float/int, number of powerline cycles per measurement
+        :param four_wire: bool, whether to use 4 wire mode (default, True) or 2 wire (False)
 
         :returns: None
         """
@@ -270,7 +291,10 @@ class K2401:
         self.k2401.write('sens:func "volt"')
         self.k2401.write(f'sens:volt:nplc {nplc}')
         self.k2401.write('sens:volt:rang:auto on')
-        self.k2401.write('syst:rsen on')
+        if four_wire:
+            self.k2401.write('syst:rsen on')
+        else:
+            self.k2401.write('syst:rsen off')
         self.k2401.write('form:elem time, volt, curr')
         self.k2401.write('trac:cle')  # clear buffer
         self.k2401.write(f'trig:count {num}')  # number of p
@@ -666,10 +690,12 @@ class K6221:
         """
         self.K6221.write(f'source:current {bias}')
         self.K6221.write('source:sweep:spacing list')
-        self.K6221.write('source:list:current 0')
-        for x in sweep_list:
+        self.K6221.write(f'source:delay {delay}')  # delay between loops?
+        self.K6221.write(f'source:list:delay {delay}')  # delay between measurements inside loops?
+        self.K6221.write(f'source:list:current {sweep_list[0]}')
+        for x in sweep_list[1:]:
             self.K6221.write(f'source:list:current:append {x}')
-        self.K6221.write(f'source:list:delay {delay}')
+            self.K6221.write(f'source:list:delay:append {delay}')
         self.K6221.write(f'source:list:compliance {compliance}')
         self.K6221.write(f'source:sweep:count {count}')
         self.K6221.write(f'source:sweep:ranging {ranging}')
