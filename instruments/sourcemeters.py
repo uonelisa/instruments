@@ -434,6 +434,29 @@ class K2461:
         self.k2461.write('sens:volt:rang:auto on')
         self.k2461.write(f'count {num}')
 
+    def prepare_measure_one(self, current, nplc=2, four_wire=True):
+        """
+        Prepares the instrument to measure a 4wire resistance one at a time. For use with either trigger_fetch and
+        fetch_one or with read_one. This does not enables probe current. use enable output current after
+
+        :param float current:
+        :param float nplc:
+        :param bool four_wire: whether to measure in 4 wire or 2 wire mode
+
+        :returns: None
+        """
+        self.k2461.write('sens:func "volt"')
+        self.k2461.write('sens:volt:rang:auto on')
+        if four_wire:
+            self.k2461.write('sens:volt:rsen on')
+        else:
+            self.k2461.write('sens:volt:rsen off')
+        self.k2461.write(f'sens:volt:nplc {nplc}')
+        self.k2461.write('sour:func curr')
+        self.k2461.write(f'sour:curr {current}')
+        self.k2461.write('sour:curr:range:auto on')
+        self.k2461.write('sour:curr:vlim 2')
+
     def enable_4_wire_probe(self, current, nplc=2):
         """
         Prepares the instrument to measure a 4wire resistance one at a time. For use with either trigger_fetch and
@@ -543,6 +566,14 @@ class K2461:
         """
         data = self.k2461.query_ascii_values('fetch? "defbuffer1", sour, read')
         return data[1], data[0]
+
+    def enable_probe_current(self):
+        """
+        Stops the instrument from outputting current. Same as hitting "output on/off" on the front IO.
+
+        :returns: None
+        """
+        self.k2461.write('outp on')
 
     def disable_probe_current(self):
         """
