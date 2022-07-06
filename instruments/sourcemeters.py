@@ -1,6 +1,7 @@
 import pyvisa
 import numpy as np
 import time
+import matplotlib.pyplot as plt
 
 __all__ = ['K2400', 'K2401', 'K2461', 'K6221']
 
@@ -352,7 +353,7 @@ class K2461:
         """
         rm = pyvisa.ResourceManager('@ivi')
         self.k2461 = rm.open_resource('USB0::0x05E6::0x2461::04121022::INSTR', write_termination='\n', send_end=True)
-        self.k2461.timeout = 50000
+        self.k2461.timeout = 20000
         print('connected to: ', self.k2461.query('*idn?'))
         self.k2461.write('*rst')
 
@@ -371,7 +372,7 @@ class K2461:
             f'sour:puls:swe:volt:lin 0, 0, {voltage}, 2, {width}, off, "defbuffer1", 0, 0, 1, {clim}, {clim}, off, off')
         self.set_ext_trig()
 
-    def prepare_pulsing_current(self, current, width, vlim=40):
+    def prepare_pulsing_current(self, current, width, vlim=100):
         """
         Forms a current pulse trigger group for the instrument. See also: send_pulse and set_ext_trig()
 
@@ -384,6 +385,36 @@ class K2461:
         self.k2461.write('*rst')
         self.k2461.write(
             f'sour:puls:swe:curr:lin 0, 0, {current}, 2, {width}, off, "defbuffer1", 0, 0, 1, {vlim}, {vlim}, off, off')
+
+    def prepare_customsweep_currentpulse(self, sweep_list, width, nsweeps, delay, vlim=40, meason=1, range=0.2):
+        self.k2461.write('*rst')
+        self.k2461.write(f'stat:cle')
+        self.k2461.write(f'stat:ques:map 0, 2732, 2731')
+        self.k2461.write(f'stat:ques:enable 1')
+        self.k2461.write(f'stat:oper:map 0, 2732, 2731')
+        self.k2461.write(f'stat:oper:enable 1')
+        # self.k2461.write(f'trac:make "mybuffer", {num}')
+
+        self.k2461.write('sour:func curr')
+        self.k2461.write('sens:func "volt"')
+        self.k2461.write(f'sour:curr:vlim 0.2')
+        self.k2461.write(f'sour:puls:curr:vlim 0.2') # didn't do anything
+        self.k2461.write(f'sour:curr:range {10e-3}')
+        self.k2461.write('sens:volt:rsen on')
+        self.k2461.write('sens:volt:nplc 0.01')
+        self.k2461.write('sens:volt:azer 0')
+        self.k2461.write('sens:volt:rang:auto off')
+        self.k2461.write('sens:volt:rsen on')
+        self.k2461.write(f'sens:volt:rang 0.2')
+
+        # self.k2461.write('sour:curr:rang:auto on')
+        # self.k2461.write(f'sour:puls:list:curr {list}')
+        self.k2461.write(f'source:puls:list:curr {sweep_list[0]}')
+        for x in sweep_list[1:]:
+            self.k2461.write(f'source:puls:list:curr:append {x}')
+        self.k2461.write(
+            f'source:puls:swe:curr:list {width}, {meason}, "defbuffer1", 1, {nsweeps}, {delay}, {delay}, 1')
+
 
     def set_ext_trig(self, pin=3):
         """
@@ -410,6 +441,7 @@ class K2461:
         :returns: None
         """
         self.k2461.write('init')  # send pulse
+        # self.k2461.write('*wai')
 
     def prepare_measure_n(self, current, num, nplc=2):
         """
@@ -444,6 +476,7 @@ class K2461:
 
         :returns: None
         """
+        self.k2461.write('*rst')
         self.k2461.write('sens:func "volt"')
         self.k2461.write('sens:volt:rang:auto on')
         self.k2461.write('sens:volt:rsen on')
@@ -510,7 +543,7 @@ class K2461:
         """
         self.k2461.write('outp off')
         try:
-            data = np.array(self.k2461.query_ascii_values(f'trac:data? 1, {num}, "mybuffer", sour, read, rel'))
+            data = np.array(self.k2461.query_ascii_values(f'trac:data? 1, {num}, "defbuffer1", sour, read, rel'))
             t = data[2::3]
             v = data[1::3]
             c = data[0::3]
@@ -543,6 +576,38 @@ class K2461:
         """
         data = self.k2461.query_ascii_values('fetch? "defbuffer1", sour, read')
         return data[1], data[0]
+
+    def get_trace(self, num, check_period=10):
+        """
+        Retrieves the measured values after an output sweep such as delta pulsing. It does this by waiting a while then
+        checking whether the instrument is still armed but waiting for a trigger event. If this is detected, the abort
+        command is sent and the data is retrieved.
+
+        :param float delay: Time to wait between checking the instrument's state in seconds
+
+        :returns: the trace data
+        :rtype: np.ndarray
+        """
+        start_time = time.time()
+        running = 1
+        while running:
+            time.sleep(check_period)
+            status = int(self.k2461.query_ascii_values('*STB?')[0])
+            state = format(status, '#08b')
+            # print(status)
+            qsb = state[-4] == '1'
+            msb = state[-1] == '1'
+            if msb or qsb:
+                running = False
+            print(f'time elapsed: {time.time() - start_time}')
+        print('Measurement Finished, reading data')
+        time.sleep(1)
+        data = np.array(self.k2461.query_ascii_values(f'trac:data? 1, {num}, "defbuffer1", sour, read, rel'))
+        t = data[2::3]
+        v = data[1::3]
+        c = data[0::3]
+        self.k2461.write('*CLS')
+        return t, v, c
 
     def disable_probe_current(self):
         """
@@ -690,8 +755,8 @@ class K6221:
         """
         self.K6221.write(f'source:current {bias}')
         self.K6221.write('source:sweep:spacing list')
-        self.K6221.write(f'source:delay {delay}')  # delay between loops?
-        self.K6221.write(f'source:list:delay {delay}')  # delay between measurements inside loops?
+        # self.K6221.write(f'source:delay {delay}')  # cycle time for lin/log sweeps
+        self.K6221.write(f'source:list:delay {delay}')  # cycle time list for custom
         self.K6221.write(f'source:list:current {sweep_list[0]}')
         for x in sweep_list[1:]:
             self.K6221.write(f'source:list:current:append {x}')
@@ -778,7 +843,7 @@ class K6221:
         self.K6221.write('INIT:IMM')
 
     def get_trace(self, delay=60):
-        """
+        """\
         Retrieves the measured values after an output sweep such as delta pulsing. It does this by waiting a while then
         checking whether the instrument is still armed but waiting for a trigger event. If this is detected, the abort
         command is sent and the data is retrieved.
@@ -791,7 +856,7 @@ class K6221:
         start_time = time.time()
         is_finished = False
         while not is_finished:
-            time.sleep(delay)
+            plt.pause(delay)
             state = int(self.K6221.query('status:operation:cond?'))
             is_finished = bin(state)[-2] == '1'
             sweeping = bin(state)[-4] == '1'
