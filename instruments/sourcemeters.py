@@ -1,7 +1,6 @@
 import pyvisa
 import numpy as np
 import time
-import matplotlib.pyplot as plt
 
 __all__ = ['K2400', 'K2401', 'K2461', 'K6221']
 
@@ -353,7 +352,7 @@ class K2461:
         """
         rm = pyvisa.ResourceManager('@ivi')
         self.k2461 = rm.open_resource('USB0::0x05E6::0x2461::04121022::INSTR', write_termination='\n', send_end=True)
-        self.k2461.timeout = 20000
+        self.k2461.timeout = 50000
         print('connected to: ', self.k2461.query('*idn?'))
         self.k2461.write('*rst')
 
@@ -372,7 +371,7 @@ class K2461:
             f'sour:puls:swe:volt:lin 0, 0, {voltage}, 2, {width}, off, "defbuffer1", 0, 0, 1, {clim}, {clim}, off, off')
         self.set_ext_trig()
 
-    def prepare_pulsing_current(self, current, width, vlim=100):
+    def prepare_pulsing_current(self, current, width, vlim=40):
         """
         Forms a current pulse trigger group for the instrument. See also: send_pulse and set_ext_trig()
 
@@ -466,6 +465,29 @@ class K2461:
         self.k2461.write('sens:volt:rang:auto on')
         self.k2461.write(f'count {num}')
 
+    def prepare_measure_one(self, current, nplc=2, four_wire=True):
+        """
+        Prepares the instrument to measure a 4wire resistance one at a time. For use with either trigger_fetch and
+        fetch_one or with read_one. This does not enables probe current. use enable output current after
+
+        :param float current:
+        :param float nplc:
+        :param bool four_wire: whether to measure in 4 wire or 2 wire mode
+
+        :returns: None
+        """
+        self.k2461.write('sens:func "volt"')
+        self.k2461.write('sens:volt:rang:auto on')
+        if four_wire:
+            self.k2461.write('sens:volt:rsen on')
+        else:
+            self.k2461.write('sens:volt:rsen off')
+        self.k2461.write(f'sens:volt:nplc {nplc}')
+        self.k2461.write('sour:func curr')
+        self.k2461.write(f'sour:curr {current}')
+        self.k2461.write('sour:curr:range:auto on')
+        self.k2461.write('sour:curr:vlim 2')
+
     def enable_4_wire_probe(self, current, nplc=2):
         """
         Prepares the instrument to measure a 4wire resistance one at a time. For use with either trigger_fetch and
@@ -476,7 +498,6 @@ class K2461:
 
         :returns: None
         """
-        self.k2461.write('*rst')
         self.k2461.write('sens:func "volt"')
         self.k2461.write('sens:volt:rang:auto on')
         self.k2461.write('sens:volt:rsen on')
@@ -543,7 +564,7 @@ class K2461:
         """
         self.k2461.write('outp off')
         try:
-            data = np.array(self.k2461.query_ascii_values(f'trac:data? 1, {num}, "defbuffer1", sour, read, rel'))
+            data = np.array(self.k2461.query_ascii_values(f'trac:data? 1, {num}, "mybuffer", sour, read, rel'))
             t = data[2::3]
             v = data[1::3]
             c = data[0::3]
@@ -576,6 +597,14 @@ class K2461:
         """
         data = self.k2461.query_ascii_values('fetch? "defbuffer1", sour, read')
         return data[1], data[0]
+
+    def enable_probe_current(self):
+        """
+        Stops the instrument from outputting current. Same as hitting "output on/off" on the front IO.
+
+        :returns: None
+        """
+        self.k2461.write('outp on')
 
     def get_trace(self, num, check_period=10):
         """
@@ -843,7 +872,7 @@ class K6221:
         self.K6221.write('INIT:IMM')
 
     def get_trace(self, delay=60):
-        """\
+        """
         Retrieves the measured values after an output sweep such as delta pulsing. It does this by waiting a while then
         checking whether the instrument is still armed but waiting for a trigger event. If this is detected, the abort
         command is sent and the data is retrieved.

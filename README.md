@@ -14,12 +14,6 @@ Please excuse the informal format of the repo. There are plans to create appropr
     
 ## Updating if already installed
     pip install --upgrade git+https://github.com/stupoole/instruments
-    
-## To add as a dependency to another pip repository
-Add the following argument to setup.py setuptools.setup()
-
-    dependency_links=['https://github.com/stupoole/instruments/tarball/repo/master#egg=package-1.0'],
-
 
 ## Importing the package and first use
     import instruments
@@ -28,7 +22,7 @@ Add the following argument to setup.py setuptools.setup()
     multimeter.
 
 ## Examples
-    https://github.com/stupoole/instrumentsexamples
+[https://github.com/stupoole/instrumentsexamples](https://github.com/stupoole/instrumentsexamples)
 
 # Modules
 ## lockins
