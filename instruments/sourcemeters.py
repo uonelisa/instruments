@@ -871,6 +871,22 @@ class K6221:
         """
         self.K6221.write('INIT:IMM')
 
+    def get_trace_fast(self):
+        is_finished = False
+        while not is_finished:
+            time.sleep(0.1)
+            state = int(self.K6221.query('status:operation:cond?'))
+            is_finished = bin(state)[-2] == '1'
+            sweeping = bin(state)[-4] == '1'
+            aborted = bin(state)[-3] == '1'
+            if not sweeping:
+                print('Not sweeping or done?')
+            if aborted:
+                is_finished = True
+                print('apparently this sweep is aborted, script is ending measurement.')
+        data = self.K6221.query_ascii_values('trace:data?')
+        return np.array(data)
+
     def get_trace(self, delay=60):
         """
         Retrieves the measured values after an output sweep such as delta pulsing. It does this by waiting a while then
