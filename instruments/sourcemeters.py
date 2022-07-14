@@ -885,7 +885,7 @@ class K6221:
         start_time = time.time()
         is_finished = False
         while not is_finished:
-            plt.pause(delay)
+            time.sleep()
             state = int(self.K6221.query('status:operation:cond?'))
             is_finished = bin(state)[-2] == '1'
             sweeping = bin(state)[-4] == '1'
@@ -898,7 +898,7 @@ class K6221:
             print(f'state: {state}' + f'    time elapsed: {time.time() - start_time}')
         print('Measurement Finished, Aborting wave')
         self.K6221.write(f'source:sweep:abort')
-        time.sleep(1)
+        time.sleep()
         print('reading data')
         data = self.K6221.query_ascii_values('trace:data?')
         return np.array(data)
