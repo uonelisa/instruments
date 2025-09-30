@@ -351,7 +351,7 @@ class K2461:
         :returns: None
         """
         rm = pyvisa.ResourceManager('@ivi')
-        self.k2461 = rm.open_resource('USB0::0x05E6::0x2461::04121022::INSTR', write_termination='\n', send_end=True)
+        self.k2461 = rm.open_resource('ASRL4::INSTR', write_termination='\n', send_end=True)
         self.k2461.timeout = 50000
         print('connected to: ', self.k2461.query('*idn?'))
         self.k2461.write('*rst')
