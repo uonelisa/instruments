@@ -9,11 +9,11 @@ Please excuse the informal format of the repo. There are plans to create appropr
 [https://stupoole.github.io/instruments/](https://stupoole.github.io/instruments/)
 
 ## Installation from github
-    pip install git+https://github.com/stupoole/instruments
+    pip install git+https://github.com/uonelisa/instruments
        
     
 ## Updating if already installed
-    pip install --upgrade git+https://github.com/stupoole/instruments
+    pip install --upgrade git+https://github.com/uonelisa/instruments
 
 ## Importing the package and first use
     import instruments
