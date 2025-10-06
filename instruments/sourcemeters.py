@@ -498,6 +498,7 @@ class K2461:
 
         :returns: None
         """
+        self.k2461.write('*rst')
         self.k2461.write('sens:func "volt"')
         self.k2461.write('sens:volt:rang:auto on')
         self.k2461.write('sens:volt:rsen on')
