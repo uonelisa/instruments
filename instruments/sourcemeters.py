@@ -488,7 +488,7 @@ class K2461:
         self.k2461.write('sour:curr:range:auto on')
         self.k2461.write('sour:curr:vlim 2')
 
-    def enable_4_wire_probe(self, current, nplc=2, vlim=40):
+    def enable_4_wire_probe(self, current, nplc=2, vlim=1):
         """
         Prepares the instrument to measure a 4wire resistance one at a time. For use with either trigger_fetch and
         fetch_one or with read_one. This enables probe current.
