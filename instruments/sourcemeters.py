@@ -488,7 +488,7 @@ class K2461:
         self.k2461.write('sour:curr:range:auto on')
         self.k2461.write('sour:curr:vlim 2')
 
-    def enable_4_wire_probe(self, current, nplc=2):
+    def enable_4_wire_probe(self, current, nplc=2, vlim=40):
         """
         Prepares the instrument to measure a 4wire resistance one at a time. For use with either trigger_fetch and
         fetch_one or with read_one. This enables probe current.
@@ -506,7 +506,7 @@ class K2461:
         self.k2461.write('sour:func curr')
         self.k2461.write(f'sour:curr {current}')
         self.k2461.write('sour:curr:range:auto on')
-        self.k2461.write('sour:curr:vlim 2')
+        self.k2461.write(f'sour:curr:vlim {vlim}')
         self.k2461.write('outp on')
 
     # For use when reading one value from Source meter at a time in 2 wire mode.
