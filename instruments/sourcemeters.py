@@ -500,11 +500,11 @@ class K2461:
         """
         # todo (Alex) should include this vlim and vrang in enable_2_wire_probe
         self.k2461.write('*rst')
+        self.k2461.write('sour:func curr')
         self.k2461.write('sens:func "volt"')
         self.k2461.write(f'sens:volt:rang {vrang}')
         self.k2461.write('sens:volt:rsen on')
         self.k2461.write(f'sens:volt:nplc {nplc}')
-        self.k2461.write('sour:func curr')
         self.k2461.write(f'sour:curr {current}')
         self.k2461.write('sour:curr:range:auto on')
         self.k2461.write(f'sour:curr:vlim {vlim}')
