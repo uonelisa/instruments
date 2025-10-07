@@ -488,7 +488,7 @@ class K2461:
         self.k2461.write('sour:curr:range:auto on')
         self.k2461.write('sour:curr:vlim 2')
 
-    def enable_4_wire_probe(self, current, nplc=2, vlim=1):
+    def enable_4_wire_probe(self, current, nplc=2, vlim=1, vrang=2):
         """
         Prepares the instrument to measure a 4wire resistance one at a time. For use with either trigger_fetch and
         fetch_one or with read_one. This enables probe current.
@@ -498,9 +498,10 @@ class K2461:
 
         :returns: None
         """
+        # todo (Alex) should include this vlim and vrang in enable_2_wire_probe
         self.k2461.write('*rst')
         self.k2461.write('sens:func "volt"')
-        self.k2461.write('sens:volt:rang:auto on')
+        self.k2461.write(f'sens:volt:rang {vrang}')
         self.k2461.write('sens:volt:rsen on')
         self.k2461.write(f'sens:volt:nplc {nplc}')
         self.k2461.write('sour:func curr')
