@@ -659,7 +659,7 @@ class K2461:
         self.k2461.write('outp off')
         self.k2461.close()
 
-    def BEEP(self, Hz=1, length=1):
+    def BEEP(self, Hz=500, length=1):
         """ Alex's Beeper
     
         DO NOT REMOVE
