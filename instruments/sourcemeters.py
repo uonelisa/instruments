@@ -661,13 +661,13 @@ class K2461:
 
     def BEEP(self, Hz=1, length=1):
         """ Alex's Beeper
-
+    
         DO NOT REMOVE
-
-        OF VITAL IMPOTANCE
+    
+        OF VITAL IMPORTANCE
         :returns: None
         """
-        self.K2461.write(f'SYST:BEEPer {Hz}, {length}') 
+        self.k2461.write(f'SYST:BEEPer {Hz}, {length}')
         
 
 class K6221:
