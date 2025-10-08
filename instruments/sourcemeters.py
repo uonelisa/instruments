@@ -498,7 +498,6 @@ class K2461:
 
         :returns: None
         """
-        # todo (Alex) should include this vlim and vrang in enable_2_wire_probe
         self.k2461.write('*rst')
         self.k2461.write('sour:func curr')
         self.k2461.write('sens:func "volt"')
@@ -513,7 +512,7 @@ class K2461:
     # For use when reading one value from Source meter at a time in 2 wire mode.
     # Applies current and measures voltage required to apply that current
     # nplc: 0.02, 0.2, 1, 10, 100, 200. 0.2 is "fast".
-    def enable_2_wire_probe(self, current, nplc=2):
+    def enable_2_wire_probe(self, current, nplc=2, vlim=1):
         """
         Prepares the instrument to measure a 2wire resistance one at a time. For use with either trigger_fetch and
         fetch_one or with read_one. This enables probe current.
@@ -523,14 +522,15 @@ class K2461:
 
         :returns: None
         """
+        self.k2461.write('*rst')
+        self.k2461.write('sour:func curr')
         self.k2461.write('sens:func "volt"')
         self.k2461.write('sens:volt:rang:auto on')
         self.k2461.write('sens:volt:rsen off')
         self.k2461.write(f'sens:volt:nplc {nplc}')
-        self.k2461.write('sour:func curr')
         self.k2461.write(f'sour:curr {current}')
         self.k2461.write('sour:curr:range:auto on')
-        self.k2461.write('sour:curr:vlim 2')
+        self.k2461.write(f'sour:curr:vlim {vlim}')
         self.k2461.write('outp on')
 
     def trigger(self):
