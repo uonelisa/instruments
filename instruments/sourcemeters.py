@@ -659,6 +659,16 @@ class K2461:
         self.k2461.write('outp off')
         self.k2461.close()
 
+    def BEEP(self, Hz=1, length=1):
+        """ Alex's Beeper
+
+        DO NOT REMOVE
+
+        OF VITAL IMPOTANCE
+        :returns: None
+        """
+        self.K2461.write(:SYST:BEEPer Hz, length) 
+        
 
 class K6221:
     """
