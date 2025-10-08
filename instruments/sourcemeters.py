@@ -667,7 +667,7 @@ class K2461:
         OF VITAL IMPOTANCE
         :returns: None
         """
-        self.K2461.write(:SYST:BEEPer Hz, length) 
+        self.K2461.write(f'SYST:BEEPer {Hz}, {length}') 
         
 
 class K6221:
