@@ -22,7 +22,7 @@ sm.enable_2_wire_probe(probe_current, nplc, vlim)
 time.sleep(2)
 
 c, v = sm.read_one()
-R = v / c
+R = v / probe_current
 sm.disable_probe_current()
 
 print("Current =",probe_current*10**(3),"mA")
@@ -37,4 +37,5 @@ sm.BEEP(500,0.5)
 
 sb.close()
 sm.close()
+
 
