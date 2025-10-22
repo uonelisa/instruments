@@ -7,14 +7,14 @@ import matplotlib.pyplot as plt
 sb = instruments.SwitchBox()
 sm = instruments.K2461()
 
-sb.connect(3)
+sb.connect(5)
 sm.connect()
 
-probe_current = 100e-6
+probe_current = 1e-6
 nplc = 2
-vlim = 1
+vlim = 10
 
-meas = {"I+": "G", "I-": "G"}
+meas = {"I+": "H", "I-": "G"}
 
 sb.switch(meas)
 
@@ -26,7 +26,7 @@ R = v / probe_current
 sm.disable_probe_current()
 
 print("Current =",probe_current*10**(3),"mA")
-print("Recorded: Voltage =",v,"V","  Resistance =",R,"Ohms")
+print("Recorded: Voltage =",v,"V","  Resistance =",R*10**-3,"KOhms")
 
 sm.BEEP(300,0.5)
 plt.pause(0.5)
@@ -37,5 +37,6 @@ sm.BEEP(500,0.5)
 
 sb.close()
 sm.close()
+
 
 
