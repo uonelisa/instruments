@@ -11,16 +11,16 @@ sm = instruments.K2461()
 sb.connect(5)
 sm.connect()
 
-meas = {"I+": "E", "I-": "G", "V1+": "F", "V1-": "H"}
-puls1 = {"I+": "E", "I-": "G"}
+meas = {"I+": "H", "I-": "G", "V1+": "F", "V1-": "E"}
+puls1 = {"I+": "H", "I-": "G"}
 puls2 =  {"I+": "G", "I-": "G"}
 
 # Pulse                                         
 pulse_width = 1e-3
-number_of_pulses = 40 # use even number
+number_of_pulses = 16 # use even number
 number_of_sweeps = 3
 
-pulse_min, pulse_max = -10e-3, 10e-3
+pulse_min, pulse_max = -0.1e-3, 0.1e-3
 
 pulse_0toMax = np.linspace(0, pulse_max, int(0.5*number_of_pulses))
 pulse_MaxtoMin = np.linspace(pulse_max, pulse_min, number_of_pulses)
@@ -31,10 +31,10 @@ pulse_arr = np.concatenate((pulse_0toMax, pulse_MaxtoMin, pulse_Minto0))
 pulse_arr_n = np.tile(pulse_arr, number_of_sweeps)
 
 # Probe
-probe_current = 200e-6
+probe_current = 20e-6
 nplc = 2
 number_of_measurments = 1
-vlim = 2
+vlim = 4
 
 # Pre set matrix and arrays
 n_pulses = np.arange(number_of_pulses)
@@ -51,6 +51,9 @@ print("About to start pulses")
 
 Cur_arr = np.zeros(2) # this is going to save current and previous value
 
+Failed = "No"
+
+# Loop that goes though every current value in array pulse_arr_n and pulses it
 try:
 
     for n, Cur in enumerate(pulse_arr_n):
@@ -66,11 +69,11 @@ try:
         print("send pulse",n+1) 
         plt.pause(200e-3)
         sb.switch(meas)
-        plt.pause(1)
+        plt.pause(0.75)
         # sm.prepare_measure_one(probe_current, nplc)
         sm.enable_4_wire_probe(probe_current, nplc, vlim)
         print("enabaling probe")
-        plt.pause(1)
+        plt.pause(0.75)
         c, v = sm.read_one()
         print("Read")
         sm.disable_probe_current()
@@ -98,9 +101,34 @@ except:
     
     print("There was an Error and had to close loop")
     
+    sm.BEEP(311, 0.25)
+    plt.pause(0.15)
+    sm.BEEP(294, 0.25)
+    plt.pause(0.15)
+    sm.BEEP(262, 0.5)
+    plt.pause(0.15)
+    
     sb.close()
     sm.close()
     
+    Failed = "Yes"
+
+
+# Added sound effects
+if Failed == "No":
+    
+    sm.BEEP(440, 0.6)
+    plt.pause(0.1)
+    sm.BEEP(466, 0.6)
+    plt.pause(0.1)
+    sm.BEEP(494, 0.6)
+    plt.pause(0.1)
+    sm.BEEP(523, 0.6)
+    plt.pause(0.1)
+    sm.BEEP(784, 1.2)
+    plt.pause(0.1)
+
+
 
 pulse_data = pulse_arr
 probe_data = probe_current*np.ones(number_of_pulses)
@@ -114,37 +142,7 @@ current_resistance_data = np.column_stack((current_arr, resistance_arr))
 
 plt.plot(pulse_arr_n, resistance_arr)
 
-
-# time_arr_0 = pulse_data[0][0]
-
-
-# for n in n_pulses:
-    
-#     time_n = pulse_data[n][0]
-#     time_arr_matrix[:,n] = time_n
-    
-#     v = pulse_data[n][1]
-#     voltage_matrix[:, n] = v 
-
-# for n in np.arange(number_of_measurments):
-    
-#     t_n = time_arr_matrix[n,:]
-#     t_std = np.std(t_n)
-#     t_av = np.average(t_n)
-    
-#     time_arr_av[n,:] = t_av
-#     time_arr_std[n,:] = t_std
-    
-    
-# final_data = np.column_stack((time_arr_av, time_arr_std, voltage_matrix))
-
-# final_data_single_measurment = np.zeros((number_of_pulses, 2))
- 
-
-# print(final_data.shape)
-# print(final_data[:10])  # preview first 5 rows
-
-# np.savetxt("pulse_data.csv", final_data, delimiter=",", header="Time," + ",".join([f"Pulse{i+1}" for i in range(number_of_pulses)]), comments="")
+np.savetxt(r"C:\Users\ppyak4\OneDrive - The University of Nottingham\PhD\Exported Data sets from Python\Test.txt", current_resistance_data)
 
 
 
@@ -155,3 +153,4 @@ plt.plot(pulse_arr_n, resistance_arr)
 
 sb.close()
 sm.close()
+
