@@ -7,17 +7,17 @@ import matplotlib.pyplot as plt
 sb = instruments.SwitchBox()
 sm = instruments.K2461()
 
-sb.connect(3)
+sb.connect(5)
 sm.connect()
 
 probe_current = 100e-6
 nplc = 2
 vlim = 1
 
-meas = {"I+": "G", "I-": "G", "V1+": "F", "V1-": "E"}
+meas = {"I+": "H", "I-": "G", "V1+": "F", "V1-": "E"}
 
 sb.switch(meas)
-
+plt.pause(0.5)
 sm.enable_4_wire_probe(probe_current, nplc, vlim)
 time.sleep(2)
 
@@ -36,6 +36,4 @@ sm.BEEP(500,0.5)
 
 sb.close()
 sm.close()
-
-
 
