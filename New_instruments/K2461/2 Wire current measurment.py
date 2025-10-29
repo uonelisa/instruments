@@ -14,7 +14,7 @@ probe_current = 1e-6
 nplc = 2
 vlim = 10
 
-meas = {"I+": "H", "I-": "G"}
+meas = {"I+": "H", "I-": "F"}
 
 sb.switch(meas)
 
@@ -37,6 +37,4 @@ sm.BEEP(500,0.5)
 
 sb.close()
 sm.close()
-
-
 

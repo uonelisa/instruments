@@ -10,11 +10,11 @@ sm = instruments.K2461()
 sb.connect(5)
 sm.connect()
 
-probe_current = 100e-6
+probe_current = 0.1e-3
 nplc = 2
-vlim = 1
+vlim = 4
 
-meas = {"I+": "H", "I-": "G", "V1+": "F", "V1-": "E"}
+meas = {"I+": "G", "I-": "E", "V1+": "F", "V1-": "H"}
 
 sb.switch(meas)
 plt.pause(0.5)
@@ -36,4 +36,24 @@ sm.BEEP(500,0.5)
 
 sb.close()
 sm.close()
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 

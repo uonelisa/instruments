@@ -8,19 +8,21 @@ import matplotlib.pyplot as plt
 sb = instruments.SwitchBox()
 sm = instruments.K2461()
 
+
+
 sb.connect(5)
 sm.connect()
 
-meas = {"I+": "H", "I-": "G", "V1+": "F", "V1-": "E"}
-puls1 = {"I+": "H", "I-": "G"}
+meas = {"I+": "H", "I-": "F", "V1+": "E", "V1-": "G"}
+puls1 = {"I+": "H", "I-": "F"}
 puls2 =  {"I+": "G", "I-": "G"}
 
 # Pulse                                         
 pulse_width = 1e-3
-number_of_pulses = 16 # use even number
-number_of_sweeps = 3
+number_of_pulses = 120 # use even number
+number_of_sweeps = 1
 
-pulse_min, pulse_max = -0.1e-3, 0.1e-3
+pulse_min, pulse_max = -2e-3, 2e-3
 
 pulse_0toMax = np.linspace(0, pulse_max, int(0.5*number_of_pulses))
 pulse_MaxtoMin = np.linspace(pulse_max, pulse_min, number_of_pulses)
@@ -153,4 +155,3 @@ np.savetxt(r"C:\Users\ppyak4\OneDrive - The University of Nottingham\PhD\Exporte
 
 sb.close()
 sm.close()
-
