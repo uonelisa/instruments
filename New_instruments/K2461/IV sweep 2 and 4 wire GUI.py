@@ -179,6 +179,15 @@ def RunFunc(event):
     ax.plot(dummy_arr, dummy_arr*slope + intercept)
     
     print("Resistance = ",slope,"Ohms")
+    
+    if save_button.value_selected == "Data saved":
+        
+        # saving data
+        name = FileNamebox.text
+        data = np.column_stack([Current_arr,Voltage_arr])
+        date = FileDatabox.text
+        np.savetxt(rf"C:\Users\ppyak4\OneDrive - The University of Nottingham\PhD\Exported Data sets from Python\Pulsing Devices Oct 2025\RC364 10um\{date}\{name}.txt", data)
+    
 
 
 
@@ -193,27 +202,39 @@ Offbutton = widgets.Button(Offax, 'Close')
 Offbutton.on_clicked(closefunc)
 
 # Run button
-Runax = plt.axes([0.05, 0.05, 0.2, 0.2]) # Add new axes to the figure
+Runax = plt.axes([0.05, 0.05, 0.25, 0.25]) # Add new axes to the figure
 Runbutton = widgets.Button(Runax, 'Run')
 Runbutton.on_clicked(RunFunc)
 
-# Radio buttons for selecting differant signals
-Wires_ax = plt.axes([0.75, 0.7, 0.15, 0.15])
+# Radio buttons for selecting 2 or 4 wire
+Wires_ax = plt.axes([0.7, 0.7, 0.15, 0.15])
 Wires_button = widgets.RadioButtons(Wires_ax, ('2 wire', '4 wire'))
+#Wires_button.on_clicked(Update)
+
+# Radio buttons for selecting save data or not
+Saved_ax = plt.axes([0.7, 0.5, 0.25, 0.15])
+save_button = widgets.RadioButtons(Saved_ax, ('No data saved', 'Data saved'))
 #Wires_button.on_clicked(Update)
 
 # Max Current input
 MaxBox_ax = plt.axes([0.3, 0.75, 0.1, 0.1])
-Maxbox = widgets.TextBox(MaxBox_ax, "Max Current (A)", initial='1e-4', color='.95', hovercolor='1', label_pad=0.01, textalignment='left')
+Maxbox = widgets.TextBox(MaxBox_ax, "Max Current (A) =", initial='1e-4', color='.95', hovercolor='1', label_pad=0.01, textalignment='left')
 
 # Min Current input
 MinBox_ax = plt.axes([0.3, 0.6, 0.1, 0.1])
-Minbox = widgets.TextBox(MinBox_ax, "Min Current (A)", initial='-1e-4', color='.95', hovercolor='1', label_pad=0.01, textalignment='left')
+Minbox = widgets.TextBox(MinBox_ax, "Min Current (A) =", initial='-1e-4', color='.95', hovercolor='1', label_pad=0.01, textalignment='left')
 
 # Current step input
 StepBox_ax = plt.axes([0.3, 0.45, 0.1, 0.1])
-Stepbox = widgets.TextBox(StepBox_ax, "Current Steps (A)", initial='1e-6', color='.95', hovercolor='1', label_pad=0.01, textalignment='left')
+Stepbox = widgets.TextBox(StepBox_ax, "Current Steps (A) =", initial='1e-6', color='.95', hovercolor='1', label_pad=0.01, textalignment='left')
 
+# File name input
+FileName_ax = plt.axes([0.5, 0.35, 0.45, 0.09])
+FileNamebox = widgets.TextBox(FileName_ax, "File name :", initial='', color='.95', hovercolor='1', label_pad=0.01, textalignment='left')
+
+# File directory input
+FileDate_ax = plt.axes([0.5, 0.23, 0.45, 0.09])
+FileDatabox = widgets.TextBox(FileDate_ax, "File date :", initial="date ie 03112025",  color='.95', hovercolor='1', label_pad=0.01, textalignment='left') 
 
 
 
