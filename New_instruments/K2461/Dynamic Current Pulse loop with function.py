@@ -9,38 +9,40 @@ sb = instruments.SwitchBox()
 sm = instruments.K2461()
 
 
-def Current_Pulse_Sweep():
+
+n_loops = 10
+
+# Pulse peramiters                                        
+pulse_width = 1e-3
+number_of_pulses = 10 # use even number
+
+pulse_min, pulse_max = -6e-3, 6e-3
+
+
+# making array
+pulse_0toMax = np.arange(0, pulse_max, pulse_max*2e-2)
+pulse_MaxtoMin = np.arange(pulse_max, pulse_min, -pulse_max*2e-2)
+pulse_Minto0 = np.arange(pulse_min, 0 + pulse_max*1e-1, pulse_max*2e-2)
+pulse_arr = np.concatenate((pulse_0toMax, pulse_MaxtoMin, pulse_Minto0))
+
+# probe peramiters
+probe_current = 100e-6
+nplc = 2
+vlim = 4
+
+
+meas = {"I+": "E", "I-": "G", "V1+": "H", "V1-": "F"}
+puls1 = {"I+": "E", "I-": "G"}
+
+
+
+def Current_Pulse_Sweep(pulse_width, probe_current, nplc, vlim, meas, puls1, pulse_arr):
     
-    sb.connect(5)
+    sb.connect(6)
     sm.connect()
     
-    meas = {"I+": "H", "I-": "G", "V1+": "E", "V1-": "F"}
-    puls1 = {"I+": "H", "I-": "F"}
-    
-    # Pulse                                         
-    pulse_width = 1e-3
-    number_of_pulses = 60 # use even number
-    number_of_sweeps = 1
-    
-    pulse_min, pulse_max = -1.5e-3, 1.5e-3
-    
-    pulse_0toMax = np.linspace(0, pulse_max, int(0.5*number_of_pulses))
-    pulse_MaxtoMin = np.linspace(pulse_max, pulse_min, number_of_pulses)
-    pulse_Minto0 = np.linspace(pulse_min, 0, int(0.5*number_of_pulses))
-    
-    pulse_arr = np.concatenate((pulse_0toMax, pulse_MaxtoMin, pulse_Minto0))
-    
-    pulse_arr_n = np.tile(pulse_arr, number_of_sweeps)
-    
-    # Probe
-    probe_current = 20e-6
-    nplc = 2
-    vlim = 4
-    
     # Pre set matrix and arrays
-    n_pulses = np.arange(number_of_pulses)
     pulse_data = []
-    # voltage_matrix = np.zeros((number_of_measurments,number_of_pulses))
     voltage_arr = []
     current_arr = []
     
@@ -53,7 +55,7 @@ def Current_Pulse_Sweep():
     # Loop that goes though every current value in array pulse_arr_n and pulses it
     try:
     
-        for n, Cur in enumerate(pulse_arr_n):
+        for n, Cur in enumerate(pulse_arr):
             
             Cur_arr[0] = Cur
             
@@ -67,7 +69,6 @@ def Current_Pulse_Sweep():
             plt.pause(200e-3)
             sb.switch(meas)
             plt.pause(0.75)
-            # sm.prepare_measure_one(probe_current, nplc)
             sm.enable_4_wire_probe(probe_current, nplc, vlim)
             print("enabaling probe")
             plt.pause(0.75)
@@ -83,11 +84,13 @@ def Current_Pulse_Sweep():
             
             r = v/c
             
+            plt.pause(0.001)
+            
             if Cur_arr[0] >= Cur_arr[1]:
-                plt.scatter(Cur,v/c,color="orange")
+                ax.scatter(Cur,v/c,color="orange")
                 
             else:
-                plt.scatter(Cur,v/c,color="purple")
+                ax.scatter(Cur,v/c,color="purple")
                 
             
             print("Pulse #", n+1, "Pulse Current =", Cur, "Amps")
@@ -95,7 +98,7 @@ def Current_Pulse_Sweep():
             
             Cur_arr[1] = Cur
     except:
-        
+        # If failed
         print("There was an Error and had to close loop")
         
         sm.BEEP(311, 0.25)
@@ -137,31 +140,36 @@ def Current_Pulse_Sweep():
     
     current_resistance_data = np.column_stack((current_arr, resistance_arr))
     
-    plt.plot(pulse_arr_n, resistance_arr)
+    ax.plot(pulse_arr_n, resistance_arr)
     
-    np.savetxt(r"C:\Users\ppyak4\OneDrive - The University of Nottingham\PhD\Exported Data sets from Python\Test.txt", current_resistance_data)
-    
+    # np.savetxt(r"C:\Users\ppyak4\OneDrive - The University of Nottingham\PhD\Exported Data sets from Python\Test.txt", current_resistance_data)
     
     sb.close()
     sm.close()
     
+    ax.clear()
     
     return resistance_arr, pulse_arr_n
 
+plt.ion()
+fig = plt.figure(figsize=(10, 6))
+ax = fig.add_axes([0.1, 0.1, 0.8, 0.8])
+ax.set_ylabel("Resistance (Ohms)")
+ax.set_xlabel("Current Pulse (A)")
+ax.set_title("Pulse Sweep")
+ax.grid(True)
 
 
-
-
-n_loops = 5
+n_loops = 10
 
 n_loops_arr = np.arange(n_loops)
 
-R_arr_2D = np.zeros(120)
+R_arr_2D = np.zeros(205)
 
 for n in range(n_loops):
     
     print("Sweep",n)
-    R_arr, pulse_arr_n = Current_Pulse_Sweep()
+    R_arr, pulse_arr_n = Current_Pulse_Sweep(pulse_width, probe_current, nplc, vlim, meas, puls1, pulse_arr)
     
     R_arr_2D = np.column_stack((R_arr_2D, R_arr))
     
@@ -173,18 +181,26 @@ R_arr_sum = np.sum(R_arr_2D_no_zero, axis=1)
 R_arr_av = R_arr_sum/n_loops
 
 
-plt.plot(pulse_arr_n, R_arr_av)
+plt.ioff()
+fig2 = plt.figure(figsize=(10, 6))
+ax2 = fig2.add_axes([0.1, 0.1, 0.8, 0.8])
+ax2.set_ylabel("Resistance (Ohms)")
+ax2.set_xlabel("Current Pulse (A)")
+ax2.set_title("Pulse Sweep")
+ax2.grid(True)
 
-name = "Psweep_I(1_10)_V(4_7)_1.5mA(1_7)_xx"
-data = np.column_stack([pulse_arr_n, R_arr_av])
-np.savetxt(rf"C:\Users\ppyak4\OneDrive - The University of Nottingham\PhD\Exported Data sets from Python\Pulsing Devices Oct 2025\RC364 10um\20251028\{name}.txt", data)
+ax2.plot(pulse_arr_n, R_arr_av)
+
+name = "05_Psweep_I(4_10)_V(1_7)_6mA(4_10)_xy"
+data = np.column_stack([pulse_arr_n, R_arr_av, R_arr_2D_no_zero])
+np.savetxt(rf"C:\Users\ppyak4\OneDrive - The University of Nottingham\PhD\Exported Data sets from Python\Pulsing Devices Oct 2025\RC364 10um\20251103\{name}.txt", data)
     
 
 
 
 
 
-    
+
     
     
     
